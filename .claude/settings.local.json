@@ -40,7 +40,9 @@
       "Bash(echo \"=== Desktop, свежие файлы \\(за сегодня\\) ===\" && ls -lat \"/Users/germandaniel/Desktop/\" 2>/dev/null | head -20 *)",
       "Bash(python3 -c \"import openpyxl; print\\('ok', openpyxl.__version__\\)\")",
       "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' '__TRACKED_VAR__/offers?limit=15&include=product')",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Анализ выгрузок 1С: 6 складов, единицы/дробность, риск сопоставления SKU \\(DEC-011, R-12\\) *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Анализ выгрузок 1С: 6 складов, единицы/дробность, риск сопоставления SKU \\(DEC-011, R-12\\) *)",
+      "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' '__TRACKED_VAR__/products?limit=50&page=1&include=custom_fields')",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Аудит каталога KeyCRM \\(чистый\\) + самокоррекция R-12 + консистентность документов *)"
     ]
   }
 }
