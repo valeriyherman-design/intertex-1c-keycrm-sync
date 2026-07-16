@@ -116,9 +116,10 @@ public sealed class Com1CConnector : I1CConnector, IDisposable
         string resultJson;
         try
         {
-            // Обработка.Выполнить(Операция, АргументыJSON) → СтрокаJSON
+            // Обработка.ВыполнитьОперацию(Операция, АргументыJSON) → СтрокаJSON
+            // ("Выполнить" — зарезервированное слово встроенного языка 1С)
             resultJson = (string)_processor!.GetType().InvokeMember(
-                "Выполнить",
+                "ВыполнитьОперацию",
                 System.Reflection.BindingFlags.InvokeMethod,
                 null, _processor, new object[] { operation, argsJson })!;
         }

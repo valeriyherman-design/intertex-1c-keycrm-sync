@@ -30,7 +30,8 @@
       "Bash(chmod +x /private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/dotnet-install.sh)",
       "Bash(/private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/dotnet-install.sh --channel 8.0 --install-dir /Users/germandaniel/.dotnet)",
       "Bash(git add *)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'TEST_STATUS + актуализация BACKLOG/PROJECT_STATUS после Этапа 2 *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'TEST_STATUS + актуализация BACKLOG/PROJECT_STATUS после Этапа 2 *)",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Обработка 1С ИнтеграцияKeyCRM \\(.bsl исходник\\) + README сборки; COM-метод → ВыполнитьОперацию *)"
     ]
   }
 }
