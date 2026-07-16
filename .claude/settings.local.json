@@ -31,7 +31,12 @@
       "Bash(/private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/dotnet-install.sh --channel 8.0 --install-dir /Users/germandaniel/.dotnet)",
       "Bash(git add *)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'TEST_STATUS + актуализация BACKLOG/PROJECT_STATUS после Этапа 2 *)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Обработка 1С ИнтеграцияKeyCRM \\(.bsl исходник\\) + README сборки; COM-метод → ВыполнитьОперацию *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Обработка 1С ИнтеграцияKeyCRM \\(.bsl исходник\\) + README сборки; COM-метод → ВыполнитьОперацию *)",
+      "mcp__claude-in-chrome__tabs_context_mcp",
+      "mcp__claude-in-chrome__navigate",
+      "mcp__claude-in-chrome__javascript_tool",
+      "mcp__claude-in-chrome__find",
+      "mcp__claude-in-chrome__computer"
     ]
   }
 }
