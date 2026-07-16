@@ -203,7 +203,7 @@ public sealed class StockSyncServiceTests : IDisposable
         public Task<Core.Models.CustomerResult> UpsertCustomerAsync(Core.Models.CustomerRequest r, string k, bool d = false, CancellationToken ct = default) => inner.UpsertCustomerAsync(r, k, d, ct);
         public Task<Core.Models.DocumentRef> UpsertOrderAsync(Core.Models.OrderRequest r, string k, bool d = false, CancellationToken ct = default) => inner.UpsertOrderAsync(r, k, d, ct);
         public Task<IReadOnlyList<Core.Models.StockRow1C>> ReserveAsync(long o, string w, string k, bool d = false, CancellationToken ct = default) => inner.ReserveAsync(o, w, k, d, ct);
-        public Task<bool> UnreserveAsync(long o, string k, CancellationToken ct = default) => inner.UnreserveAsync(o, k, ct);
+        public Task<bool> UnreserveAsync(long o, string k, bool d = false, CancellationToken ct = default) => inner.UnreserveAsync(o, k, d, ct);
         public Task<Core.Models.DocumentRef> ShipAsync(long o, string c, string k, bool d = false, CancellationToken ct = default) => inner.ShipAsync(o, c, k, d, ct);
         public Task<Core.Models.DocumentRef> CreateReturnAsync(Core.Models.ReturnRequest r, string k, bool d = false, CancellationToken ct = default) => inner.CreateReturnAsync(r, k, d, ct);
         public Task<Core.Models.DocumentRef> RegisterPaymentAsync(Core.Models.PaymentRequest r, string k, bool d = false, CancellationToken ct = default) => inner.RegisterPaymentAsync(r, k, d, ct);

@@ -63,8 +63,8 @@ public sealed class Com1CConnector : I1CConnector, IDisposable
     public Task<IReadOnlyList<StockRow1C>> ReserveAsync(long keycrmOrderId, string warehouseGuid, string idempotencyKey, bool dryRun = false, CancellationToken ct = default)
         => InvokeAsync<IReadOnlyList<StockRow1C>>("reserve", new { keycrmOrderId, warehouseGuid, idempotencyKey, dryRun }, ct);
 
-    public Task<bool> UnreserveAsync(long keycrmOrderId, string idempotencyKey, CancellationToken ct = default)
-        => InvokeAsync<bool>("unreserve", new { keycrmOrderId, idempotencyKey }, ct);
+    public Task<bool> UnreserveAsync(long keycrmOrderId, string idempotencyKey, bool dryRun = false, CancellationToken ct = default)
+        => InvokeAsync<bool>("unreserve", new { keycrmOrderId, idempotencyKey, dryRun }, ct);
 
     public Task<DocumentRef> ShipAsync(long keycrmOrderId, string itemsChecksum, string idempotencyKey, bool dryRun = false, CancellationToken ct = default)
         => InvokeAsync<DocumentRef>("ship", new { keycrmOrderId, itemsChecksum, idempotencyKey, dryRun }, ct);

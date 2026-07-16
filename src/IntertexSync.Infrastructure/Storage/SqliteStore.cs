@@ -132,7 +132,10 @@ public sealed class SqliteStore : IEventQueue, IIdempotencyStore, IMappingStore,
             WHERE e.status = 0
               AND (e.next_attempt_at IS NULL OR e.next_attempt_at <= $now)
               AND (e.order_key IS NULL OR NOT EXISTS (
-                    SELECT 1 FROM events p WHERE p.order_key = e.order_key AND p.status = 1))
+                    -- строгий порядок по заказу: не выдавать событие, если у того же заказа есть
+                    -- незавершённый (Pending/Processing) сосед с меньшим id — в т.ч. отложенный ретраем.
+                    SELECT 1 FROM events p
+                    WHERE p.order_key = e.order_key AND p.status IN (0, 1) AND p.id < e.id))
             ORDER BY e.id LIMIT 1;
             """;
         cmd.Parameters.AddWithValue("$now", DateTime.UtcNow.ToString("O"));

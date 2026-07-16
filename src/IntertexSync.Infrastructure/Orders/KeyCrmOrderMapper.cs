@@ -23,6 +23,7 @@ public static class KeyCrmOrderMapper
 
         var orderId = GetLong(root, "id") ?? throw new FormatException("order.id отсутствует");
         var statusId = (int)(GetLong(root, "status_id") ?? 0);
+        var sourceId = (int)(GetLong(root, "source_id") ?? 0);
         var currency = ResolveCurrency(root);
 
         var buyer = MapBuyer(root);
@@ -35,7 +36,7 @@ public static class KeyCrmOrderMapper
         var items = MapItems(root);
         var checksum = ComputeChecksum(items);
 
-        return new OrderView(orderId, statusId, currency, buyer, managerId, items, checksum);
+        return new OrderView(orderId, statusId, sourceId, currency, buyer, managerId, items, checksum);
     }
 
     private static BuyerView MapBuyer(JsonElement root)
@@ -70,11 +71,14 @@ public static class KeyCrmOrderMapper
         return items;
     }
 
-    /// <summary>SHA-256 по нормализованному, отсортированному составу — стабильна к порядку строк.</summary>
+    /// <summary>SHA-256 по нормализованному отсортированному составу. Стабильна к порядку строк
+    /// И к формату чисел: G29 канонизирует decimal (10 == 10.00, 2 == 2.0) — иначе разный формат
+    /// в двух выборках дал бы ложный OrderModified при списании (ТЗ п.10).</summary>
     public static string ComputeChecksum(IReadOnlyList<OrderItem> items)
     {
+        static string Num(decimal d) => d.ToString("G29", CultureInfo.InvariantCulture);
         var normalized = items
-            .Select(i => $"{i.Sku}|{i.Quantity.ToString(CultureInfo.InvariantCulture)}|{i.Price.ToString(CultureInfo.InvariantCulture)}")
+            .Select(i => $"{i.Sku}|{Num(i.Quantity)}|{Num(i.Price)}")
             .OrderBy(x => x, StringComparer.Ordinal);
         var joined = string.Join(";", normalized);
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(joined)));

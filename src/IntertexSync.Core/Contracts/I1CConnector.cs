@@ -27,7 +27,7 @@ public interface I1CConnector
     Task<IReadOnlyList<StockRow1C>> ReserveAsync(long keycrmOrderId, string warehouseGuid, string idempotencyKey, bool dryRun = false, CancellationToken ct = default);
 
     /// <summary>Снятие резерва. Идемпотентно: повторное снятие не ошибка.</summary>
-    Task<bool> UnreserveAsync(long keycrmOrderId, string idempotencyKey, CancellationToken ct = default);
+    Task<bool> UnreserveAsync(long keycrmOrderId, string idempotencyKey, bool dryRun = false, CancellationToken ct = default);
 
     /// <summary>Создать и провести Реализацию. Сверяет itemsChecksum (ORDER_MODIFIED при расхождении).</summary>
     Task<DocumentRef> ShipAsync(long keycrmOrderId, string itemsChecksum, string idempotencyKey, bool dryRun = false, CancellationToken ct = default);

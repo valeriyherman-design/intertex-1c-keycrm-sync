@@ -22,12 +22,13 @@ public sealed class OrderProcessorTests : IDisposable
     public OrderProcessorTests() => _store = new SqliteStore(_dbPath);
     public void Dispose() { _store.Dispose(); try { File.Delete(_dbPath); } catch { } }
 
-    private OrderProcessor Proc(bool dryRun = false) =>
-        new(_keyCrm, _oneC, _store,
+    private OrderProcessor Proc(bool dryRun = false, int[]? nonUsdSources = null) =>
+        new(_keyCrm, _oneC, _store, _store,
             Options.Create(new OrderSyncOptions
             {
                 DryRun = dryRun,
                 DefaultWarehouseGuid = Shop4,
+                NonUsdSourceIds = nonUsdSources ?? Array.Empty<int>(),
                 ReserveTriggerStatuses = new[] { 26 },
                 ShipTriggerStatuses = new[] { 28 },
                 CancelTriggerStatuses = new[] { 19 },
@@ -80,7 +81,7 @@ public sealed class OrderProcessorTests : IDisposable
     [Fact]
     public async Task Reserve_EmptyItems_ValidationFailed()
     {
-        _keyCrm.SetOrder(1783, OrderJson(1783, 26, "USD"));
+        _keyCrm.SetOrder(1783, OrderJson(1783, 26, "USD", Array.Empty<(string, decimal, decimal)>()));
         var r = await Proc().ReserveAsync(1783);
         Assert.Equal(OrderOutcome.ValidationFailed, r.Outcome);
     }
@@ -152,16 +153,93 @@ public sealed class OrderProcessorTests : IDisposable
         Assert.Empty(_keyCrm.UpdateCalls); // dry-run: в живой KeyCRM не пишем
     }
 
+    [Fact]
+    public async Task Reserve_CompositionChanged_ReplacesReserve_NotAccumulate()
+    {
+        _keyCrm.SetOrder(200, OrderJson(200, 26, "USD", ("SKU-A", 2m)));
+        _oneC.SetStock("SKU-A", Shop4, 20m);
+        await Proc().ReserveAsync(200);                       // резерв 2
+        Assert.Equal(2m, _oneC.GetReserved("SKU-A", Shop4));
+
+        _keyCrm.SetOrder(200, OrderJson(200, 26, "USD", ("SKU-A", 5m))); // менеджер изменил состав
+        await Proc().ReserveAsync(200);                       // должно СТАТЬ 5, а не 2+5=7
+
+        Assert.Equal(5m, _oneC.GetReserved("SKU-A", Shop4));
+    }
+
+    [Fact]
+    public async Task NonUsdSource_Rejected_EvenIfCurrencyFieldUsd()
+    {
+        // Заказ из Prom (source_id=6): вручную считается в гривне (DEC-008) → не проводить.
+        _keyCrm.SetOrder(201, OrderJsonSrc(201, 26, "USD", sourceId: 6, ("SKU-A", 1m)));
+        var r = await Proc(nonUsdSources: new[] { 6 }).ReserveAsync(201);
+        Assert.Equal(OrderOutcome.CurrencyNotSupported, r.Outcome);
+    }
+
+    [Fact]
+    public void Checksum_StableToNumberFormat()
+    {
+        var a = new[] { new OrderItem("SKU-A", 2m, 10m, 0m, 20m) };
+        var b = new[] { new OrderItem("SKU-A", 2.00m, 10.000m, 0m, 20m) };
+        Assert.Equal(KeyCrmOrderMapper.ComputeChecksum(a), KeyCrmOrderMapper.ComputeChecksum(b));
+    }
+
+    [Fact]
+    public async Task RetryableOneCError_Propagates_ForQueueRetry()
+    {
+        // Транзиентная блокировка 1С (Retryable) НЕ должна превращаться в терминальную «Помилку» —
+        // её должен пробросить процессор, чтобы QueueWorker повторил с backoff.
+        _keyCrm.SetOrder(202, OrderJson(202, 26, "USD", ("SKU-A", 1m)));
+        _oneC.SetStock("SKU-A", Shop4, 10m);
+        var throwing = new ThrowingReserveOneC(_oneC,
+            new Sync1CException(Sync1CErrorCode.Locked, "1С занята", retryable: true));
+        var proc = new OrderProcessor(_keyCrm, throwing, _store, _store,
+            Options.Create(new OrderSyncOptions { DryRun = false, DefaultWarehouseGuid = Shop4, StatusSyncError = 199 }),
+            NullLogger<OrderProcessor>.Instance);
+
+        var ex = await Assert.ThrowsAsync<Sync1CException>(() => proc.ReserveAsync(202));
+        Assert.Equal(Sync1CErrorCode.Locked, ex.Code);
+        Assert.Empty(_keyCrm.UpdateCalls); // в KeyCRM ничего не записано (не «Помилка»)
+    }
+
     // ---- построение JSON заказа KeyCRM (по снапшоту §6) ----
     private static string OrderJson(long id, int status, string currency, params (string sku, decimal qty, decimal price)[] items)
+        => OrderJsonCore(id, status, currency, sourceId: 0, items);
+
+    private static string OrderJson(long id, int status, string currency, params (string sku, decimal qty)[] items)
+        => OrderJsonCore(id, status, currency, 0, items.Select(i => (i.sku, i.qty, 10m)).ToArray());
+
+    private static string OrderJsonSrc(long id, int status, string currency, int sourceId, params (string sku, decimal qty)[] items)
+        => OrderJsonCore(id, status, currency, sourceId, items.Select(i => (i.sku, i.qty, 10m)).ToArray());
+
+    private static string OrderJsonCore(long id, int status, string currency, int sourceId, (string sku, decimal qty, decimal price)[] items)
     {
+        var ci = System.Globalization.CultureInfo.InvariantCulture;
         var products = string.Join(",", items.Select(i =>
-            $"{{\"sku\":\"{i.sku}\",\"quantity\":{i.qty.ToString(System.Globalization.CultureInfo.InvariantCulture)}," +
-            $"\"price\":{i.price.ToString(System.Globalization.CultureInfo.InvariantCulture)}," +
-            $"\"price_sold\":{i.price.ToString(System.Globalization.CultureInfo.InvariantCulture)}}}"));
-        return $"{{\"id\":{id},\"status_id\":{status},\"currency_code\":\"{currency}\"," +
+            $"{{\"sku\":\"{i.sku}\",\"quantity\":{i.qty.ToString(ci)}," +
+            $"\"price\":{i.price.ToString(ci)},\"price_sold\":{i.price.ToString(ci)}}}"));
+        return $"{{\"id\":{id},\"status_id\":{status},\"source_id\":{sourceId},\"currency_code\":\"{currency}\"," +
                $"\"buyer\":{{\"id\":4075,\"full_name\":\"Тест Клієнт\",\"phone\":[\"+380671112233\"],\"email\":[]}}," +
                $"\"manager\":{{\"id\":3}},\"products\":[{products}]}}";
+    }
+
+    /// <summary>Обёртка над моком: бросает заданную ошибку на резерве (тест проброса транзиентных).</summary>
+    private sealed class ThrowingReserveOneC(I1CConnector inner, Sync1CException onReserve) : I1CConnector
+    {
+        public Task<IReadOnlyList<StockRow1C>> ReserveAsync(long o, string w, string k, bool d = false, CancellationToken ct = default)
+            => throw onReserve;
+        public Task<HealthInfo> HealthAsync(CancellationToken ct = default) => inner.HealthAsync(ct);
+        public Task<IReadOnlyList<Warehouse1C>> GetWarehousesAsync(CancellationToken ct = default) => inner.GetWarehousesAsync(ct);
+        public Task<Page<Product1C>> GetProductsAsync(DateTime? u, int p, int l, CancellationToken ct = default) => inner.GetProductsAsync(u, p, l, ct);
+        public Task<Page<StockRow1C>> GetStocksAsync(string? w, DateTime? s, int p, int l, CancellationToken ct = default) => inner.GetStocksAsync(w, s, p, l, ct);
+        public Task<CustomerResult> UpsertCustomerAsync(CustomerRequest r, string k, bool d = false, CancellationToken ct = default) => inner.UpsertCustomerAsync(r, k, d, ct);
+        public Task<DocumentRef> UpsertOrderAsync(OrderRequest r, string k, bool d = false, CancellationToken ct = default) => inner.UpsertOrderAsync(r, k, d, ct);
+        public Task<bool> UnreserveAsync(long o, string k, bool d = false, CancellationToken ct = default) => inner.UnreserveAsync(o, k, d, ct);
+        public Task<DocumentRef> ShipAsync(long o, string c, string k, bool d = false, CancellationToken ct = default) => inner.ShipAsync(o, c, k, d, ct);
+        public Task<DocumentRef> CreateReturnAsync(ReturnRequest r, string k, bool d = false, CancellationToken ct = default) => inner.CreateReturnAsync(r, k, d, ct);
+        public Task<DocumentRef> RegisterPaymentAsync(PaymentRequest r, string k, bool d = false, CancellationToken ct = default) => inner.RegisterPaymentAsync(r, k, d, ct);
+        public Task<OrderState1C> GetOrderStateAsync(long o, CancellationToken ct = default) => inner.GetOrderStateAsync(o, ct);
+        public Task<IReadOnlyList<Transfer1C>> GetTransfersAsync(DateTime s, CancellationToken ct = default) => inner.GetTransfersAsync(s, ct);
     }
 
     private static string OrderJsonWithPayment(long id, long payId, decimal amount, string currency) =>

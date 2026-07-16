@@ -4,6 +4,7 @@ namespace IntertexSync.Core.Models;
 public sealed record OrderView(
     long OrderId,
     int StatusId,
+    int SourceId,
     string Currency,
     BuyerView Buyer,
     long? ManagerId,

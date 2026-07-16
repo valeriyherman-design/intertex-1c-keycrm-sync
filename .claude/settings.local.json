@@ -53,7 +53,8 @@
       "Bash(grep -rl \"class Mock1CConnector\" src/)",
       "Bash(grep -rl \"interface IKeyCrmClient\" src/)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Этап 4-5: сквозной цикл заказа \\(OrderProcessor\\) + E2E на живом KeyCRM, тесты 56/56 *)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Актуализация PROJECT_STATUS: Этапы 1-5, готовность цикла заказа, шаги *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Актуализация PROJECT_STATUS: Этапы 1-5, готовность цикла заказа, шаги *)",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Ревью цикла заказа: исправлены 10 дефектов \\(хост-стоп, retry, замена резерва, чексумма\\) *)"
     ]
   }
 }

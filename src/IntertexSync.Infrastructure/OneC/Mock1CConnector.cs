@@ -112,10 +112,11 @@ public sealed class Mock1CConnector : I1CConnector
         return GetStocksForOrder(keycrmOrderId, warehouseGuid);
     }
 
-    public Task<bool> UnreserveAsync(long keycrmOrderId, string idempotencyKey, CancellationToken ct = default)
+    public Task<bool> UnreserveAsync(long keycrmOrderId, string idempotencyKey, bool dryRun = false, CancellationToken ct = default)
     {
         if (!_orders.TryGetValue(keycrmOrderId, out var order)) return Task.FromResult(false);
         if (_idempotency.ContainsKey(idempotencyKey)) return Task.FromResult(true); // уже снят
+        if (dryRun) return Task.FromResult(true); // репетиция без снятия
 
         var wh = _orderWarehouse.GetValueOrDefault(keycrmOrderId, "");
         foreach (var item in order.Items)

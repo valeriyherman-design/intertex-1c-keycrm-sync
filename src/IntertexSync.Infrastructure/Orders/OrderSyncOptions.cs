@@ -12,6 +12,10 @@ public sealed class OrderSyncOptions
     /// <summary>Склад отгрузки по умолчанию (GUID 1С). DEC-010: Магазин №4 (Чагор). Для live обязателен.</summary>
     public string DefaultWarehouseGuid { get; set; } = "";
 
+    /// <summary>ID источников KeyCRM, работающих НЕ в USD (напр. Prom=6, снапшот §1). Заказы из них
+    /// пересчитываются вручную (DEC-008) → в 1С автоматически не проводятся, идут в «Помилка».</summary>
+    public int[] NonUsdSourceIds { get; set; } = Array.Empty<int>();
+
     // --- Входящие статусы-триггеры (id KeyCRM, снапшот §2) ---
     public int[] ReserveTriggerStatuses { get; set; } = { 26 }; // «Перевірка наявності»
     public int[] ShipTriggerStatuses { get; set; } = { 28 };    // «Укомплектовано»

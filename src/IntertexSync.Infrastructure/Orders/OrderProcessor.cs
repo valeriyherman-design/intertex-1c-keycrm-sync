@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text.Json;
 using IntertexSync.Core.Contracts;
 using IntertexSync.Core.Models;
 using Microsoft.Extensions.Logging;
@@ -7,8 +9,9 @@ namespace IntertexSync.Infrastructure.Orders;
 
 /// <summary>
 /// Оркестрация жизненного цикла заказа: KeyCRM вебхук → 1С операции → обновление KeyCRM.
-/// Все шаги идемпотентны (ключ = операция+order+checksum). Ошибки не роняют цикл: заказ
-/// уходит в «Помилка синхронізації» с причиной. Валюта — только USD (DEC-008).
+/// Все шаги идемпотентны. Бизнес-ошибки 1С (нехватка, изменён состав) → «Помилка синхронізації»
+/// с причиной; ТРАНЗИЕНТНЫЕ ошибки 1С (Locked/InternalError) пробрасываются → повтор в QueueWorker.
+/// Валюта — только USD (DEC-008): не-USD источники и явная не-USD валюта → «Помилка».
 /// В dry-run: X-Dry-Run в 1С + запись в KeyCRM только в лог (ГЕЙТ R-12/go-live).
 /// </summary>
 public sealed class OrderProcessor
@@ -16,30 +19,34 @@ public sealed class OrderProcessor
     private readonly IKeyCrmClient _keyCrm;
     private readonly I1CConnector _oneC;
     private readonly IConflictLog _conflicts;
+    private readonly IMappingStore _mappings;
     private readonly OrderSyncOptions _options;
     private readonly ILogger<OrderProcessor> _log;
 
     private const string OrderInclude = "buyer,products.offer,manager,custom_fields,payments";
+    private const string ReserveChecksumKind = "reserve_checksum"; // last-reserved состав по заказу
 
     public OrderProcessor(
-        IKeyCrmClient keyCrm, I1CConnector oneC, IConflictLog conflicts,
+        IKeyCrmClient keyCrm, I1CConnector oneC, IConflictLog conflicts, IMappingStore mappings,
         IOptions<OrderSyncOptions> options, ILogger<OrderProcessor> log)
     {
         _keyCrm = keyCrm;
         _oneC = oneC;
         _conflicts = conflicts;
+        _mappings = mappings;
         _options = options.Value;
         _log = log;
     }
 
-    /// <summary>Резерв: клиент → заказ покупателя → резерв → статус «Зарезервовано» либо «Помилка».</summary>
+    /// <summary>Резерв: клиент → заказ покупателя → резерв → «Зарезервовано» либо «Помилка».
+    /// Замена-к-цели: при изменении состава старый резерв снимается перед новым (без накопления).</summary>
     public async Task<OrderProcessResult> ReserveAsync(long orderId, CancellationToken ct = default)
     {
         var view = await FetchAsync(orderId, ct);
 
-        if (view.Currency != "USD")
+        if (!IsUsd(view))
             return await FailAsync(orderId, "reserve", OrderOutcome.CurrencyNotSupported,
-                $"Валюта {view.Currency} ≠ USD — требуется ручной пересчёт (Prom, DEC-008)", ct);
+                $"Валюта {view.Currency} / источник {view.SourceId} ≠ USD — ручной пересчёт (Prom, DEC-008)", ct);
 
         var invalid = ValidateItems(view);
         if (invalid is not null)
@@ -48,38 +55,53 @@ public sealed class OrderProcessor
         var wh = RequireWarehouse();
         var dry = _options.DryRun;
 
-        // 1. Контрагент (анти-дубли в 1С), идемпотентно по buyer id.
-        var customer = await _oneC.UpsertCustomerAsync(
-            new CustomerRequest(view.Buyer.Id, view.Buyer.FullName, view.Buyer.Phones, view.Buyer.Emails, null),
-            idempotencyKey: $"cust:{view.Buyer.Id}", dryRun: dry, ct);
-
-        // 2. Заказ покупателя, идемпотентно по order id.
-        var order = new OrderRequest(orderId, customer.Guid, wh, view.ManagerId, view.Currency,
-            Comment: $"KeyCRM #{orderId}", view.Items, view.ItemsChecksum);
-        var doc = await _oneC.UpsertOrderAsync(order, idempotencyKey: $"order:{orderId}", dryRun: dry, ct);
-
-        // 3. Резерв (без частичных: при нехватке — исключение с деталями).
         try
         {
+            // Идемпотентность/замена-к-цели: если состав уже зарезервирован тем же checksum — ничего не делаем.
+            var lastChecksum = await _mappings.GetAsync(ReserveChecksumKind, orderId.ToString(), ct);
+            if (lastChecksum == view.ItemsChecksum)
+            {
+                _log.LogInformation("Заказ {Order}: резерв актуален (состав не изменился) — повтор пропущен", orderId);
+                return new OrderProcessResult(orderId, "reserve", OrderOutcome.Success, _options.StatusReserved, null, null, null, dry);
+            }
+
+            // 1. Контрагент (анти-дубли), идемпотентно по buyer id.
+            var customer = await _oneC.UpsertCustomerAsync(
+                new CustomerRequest(view.Buyer.Id, view.Buyer.FullName, view.Buyer.Phones, view.Buyer.Emails, null),
+                idempotencyKey: $"cust:{view.Buyer.Id}", dryRun: dry, ct);
+
+            // 2. Заказ покупателя (идемпотентно; на реальной 1С обновляет состав).
+            var order = new OrderRequest(orderId, customer.Guid, wh, view.ManagerId, view.Currency,
+                Comment: $"KeyCRM #{orderId}", view.Items, view.ItemsChecksum);
+            var doc = await _oneC.UpsertOrderAsync(order, idempotencyKey: $"order:{orderId}:{view.ItemsChecksum}", dryRun: dry, ct);
+
+            // 3. Состав изменился → снять прежний резерв, чтобы новый не накапливался.
+            if (lastChecksum is not null)
+                await _oneC.UnreserveAsync(orderId, idempotencyKey: $"unreserve:{orderId}:{lastChecksum}", dryRun: dry, ct);
+
+            // 4. Резерв (без частичных).
             await _oneC.ReserveAsync(orderId, wh, idempotencyKey: $"reserve:{orderId}:{view.ItemsChecksum}", dryRun: dry, ct);
+
+            if (!dry)
+                await _mappings.SetAsync(ReserveChecksumKind, orderId.ToString(), view.ItemsChecksum, ct: ct);
+
+            await UpdateKeyCrmAsync(orderId, _options.StatusReserved,
+                new Dictionary<string, string?> { [_options.CfOneCDocNumber] = doc.Number }, ct);
+
+            _log.LogInformation("Заказ {Order} зарезервирован (1С {Doc}), dryRun={Dry}", orderId, doc.Number, dry);
+            return new OrderProcessResult(orderId, "reserve", OrderOutcome.Success,
+                _options.StatusReserved, doc.Number, doc.Guid, null, dry);
         }
         catch (Sync1CException ex) when (ex.Code == Sync1CErrorCode.InsufficientStock)
         {
-            var reason = "Недостатньо залишку: " + string.Join("; ", ex.Details);
-            return await FailAsync(orderId, "reserve", OrderOutcome.InsufficientStock, reason, ct);
+            return await FailAsync(orderId, "reserve", OrderOutcome.InsufficientStock,
+                "Недостатньо залишку: " + string.Join("; ", ex.Details), ct);
         }
-        catch (Sync1CException ex)
+        catch (Sync1CException ex) when (!ex.Retryable)
         {
             return await FailAsync(orderId, "reserve", OrderOutcome.OneCError, $"{ex.Code}: {ex.Message}", ct);
         }
-
-        // 4. Успех → статус «Зарезервовано» + номер документа 1С.
-        await UpdateKeyCrmAsync(orderId, _options.StatusReserved,
-            new Dictionary<string, string?> { [_options.CfOneCDocNumber] = doc.Number }, ct);
-
-        _log.LogInformation("Заказ {Order} зарезервирован (1С {Doc}), dryRun={Dry}", orderId, doc.Number, dry);
-        return new OrderProcessResult(orderId, "reserve", OrderOutcome.Success,
-            _options.StatusReserved, doc.Number, doc.Guid, null, dry);
+        // Транзиентные (Locked/InternalError) — пробрасываются в QueueWorker для повтора с backoff.
     }
 
     /// <summary>Реализация (списание): сверка состава по чексумме → провести → «Готово до відправки».</summary>
@@ -96,18 +118,21 @@ public sealed class OrderProcessor
             return new OrderProcessResult(orderId, "ship", OrderOutcome.Success,
                 _options.StatusReadyToShip, doc.Number, doc.Guid, null, dry);
         }
-        catch (Sync1CException ex)
+        catch (Sync1CException ex) when (ex.Code == Sync1CErrorCode.OrderModified)
         {
-            var outcome = ex.Code == Sync1CErrorCode.OrderModified ? OrderOutcome.ValidationFailed : OrderOutcome.OneCError;
-            return await FailAsync(orderId, "ship", outcome, $"{ex.Code}: {ex.Message}", ct);
+            return await FailAsync(orderId, "ship", OrderOutcome.ValidationFailed, $"{ex.Code}: {ex.Message}", ct);
         }
+        catch (Sync1CException ex) when (!ex.Retryable)
+        {
+            return await FailAsync(orderId, "ship", OrderOutcome.OneCError, $"{ex.Code}: {ex.Message}", ct);
+        }
+        // Транзиентные — пробрасываются для повтора.
     }
 
-    /// <summary>Отмена до реализации: снять резерв (идемпотентно).</summary>
+    /// <summary>Отмена до реализации: снять резерв (идемпотентно). После реализации — нужен возврат.</summary>
     public async Task<OrderProcessResult> CancelAsync(long orderId, CancellationToken ct = default)
     {
         var dry = _options.DryRun;
-        // Если уже есть реализация — резерв снимать нельзя, нужен возврат (отдельный процесс).
         var state = await _oneC.GetOrderStateAsync(orderId, ct);
         if (state.Realization is not null)
         {
@@ -116,38 +141,47 @@ public sealed class OrderProcessor
             return await FailAsync(orderId, "cancel", OrderOutcome.OneCError, msg, ct);
         }
 
-        await _oneC.UnreserveAsync(orderId, idempotencyKey: $"unreserve:{orderId}", ct);
+        await _oneC.UnreserveAsync(orderId, idempotencyKey: $"unreserve:{orderId}:cancel", dryRun: dry, ct);
+        if (!dry) await _mappings.SetAsync(ReserveChecksumKind, orderId.ToString(), "", ct: ct); // резерв снят
         _log.LogInformation("Заказ {Order}: резерв снят, dryRun={Dry}", orderId, dry);
         return new OrderProcessResult(orderId, "cancel", OrderOutcome.Success, null, null, null, null, dry);
     }
 
-    /// <summary>Регистрация оплат заказа в 1С (идемпотентно по payment id).</summary>
+    /// <summary>Регистрация оплат заказа в 1С (идемпотентно по payment id). Толерантный разбор.</summary>
     public async Task<OrderProcessResult> RegisterPaymentsAsync(long orderId, CancellationToken ct = default)
     {
         var doc = await _keyCrm.GetOrderAsync(orderId, "payments", ct);
         var root = doc.RootElement;
-        if (root.TryGetProperty("data", out var d) && d.ValueKind == System.Text.Json.JsonValueKind.Object) root = d;
+        if (root.TryGetProperty("data", out var d) && d.ValueKind == JsonValueKind.Object) root = d;
 
         var dry = _options.DryRun;
         var count = 0;
-        if (root.TryGetProperty("payments", out var pays) && pays.ValueKind == System.Text.Json.JsonValueKind.Array)
+        if (root.TryGetProperty("payments", out var pays) && pays.ValueKind == JsonValueKind.Array)
         {
             foreach (var p in pays.EnumerateArray())
             {
-                if (p.TryGetProperty("is_expense", out var exp) && exp.ValueKind == System.Text.Json.JsonValueKind.True) continue;
-                var payId = p.GetProperty("id").GetInt64();
-                var amount = p.TryGetProperty("actual_amount", out var a) ? a.GetDecimal() : 0m;
-                var currency = p.TryGetProperty("actual_currency", out var cu) ? cu.GetString() ?? "USD" : "USD";
-                if (currency != "USD")
+                try
                 {
-                    await _conflicts.WriteAsync("payment", payId.ToString(), $"Оплата {payId} в {currency} ≠ USD — пропущена (DEC-008)", null, ct);
-                    continue;
+                    if (p.TryGetProperty("is_expense", out var exp) && exp.ValueKind == JsonValueKind.True) continue;
+                    var payId = GetLong(p, "id");
+                    if (payId is null) { await _conflicts.WriteAsync("payment", orderId.ToString(), "Оплата без id — пропущена", p.ToString(), ct); continue; }
+                    var amount = GetDecimal(p, "actual_amount") ?? GetDecimal(p, "amount") ?? 0m;
+                    var currency = GetString(p, "actual_currency") ?? GetString(p, "source_currency") ?? "USD";
+                    if (currency != "USD")
+                    {
+                        await _conflicts.WriteAsync("payment", payId.ToString()!, $"Оплата {payId} в {currency} ≠ USD — пропущена (DEC-008)", null, ct);
+                        continue;
+                    }
+                    var methodId = (GetLong(p, "payment_method_id")?.ToString()) ?? "other";
+                    await _oneC.RegisterPaymentAsync(
+                        new PaymentRequest(payId.Value, orderId, amount, currency, methodId, DateTime.UtcNow),
+                        idempotencyKey: $"payment:{payId}", dryRun: dry, ct);
+                    count++;
                 }
-                var methodId = p.TryGetProperty("payment_method_id", out var m) ? m.GetInt32().ToString() : "other";
-                await _oneC.RegisterPaymentAsync(
-                    new PaymentRequest(payId, orderId, amount, currency, methodId, DateTime.UtcNow),
-                    idempotencyKey: $"payment:{payId}", dryRun: dry, ct);
-                count++;
+                catch (Sync1CException ex) when (!ex.Retryable)
+                {
+                    await _conflicts.WriteAsync("payment", orderId.ToString(), $"Ошибка оплаты: {ex.Code}: {ex.Message}", null, ct);
+                }
             }
         }
         _log.LogInformation("Заказ {Order}: зарегистрировано оплат {Count}, dryRun={Dry}", orderId, count, dry);
@@ -157,17 +191,17 @@ public sealed class OrderProcessor
     // ---- helpers ----
 
     private async Task<OrderView> FetchAsync(long orderId, CancellationToken ct)
-    {
-        var doc = await _keyCrm.GetOrderAsync(orderId, OrderInclude, ct);
-        return KeyCrmOrderMapper.Map(doc);
-    }
+        => KeyCrmOrderMapper.Map(await _keyCrm.GetOrderAsync(orderId, OrderInclude, ct));
+
+    /// <summary>USD только если и валюта USD, и источник не в списке не-USD (Prom). Fail-closed по источнику.</summary>
+    private bool IsUsd(OrderView v) => v.Currency == "USD" && !_options.NonUsdSourceIds.Contains(v.SourceId);
 
     private static string? ValidateItems(OrderView v)
     {
         if (v.Items.Count == 0) return "Пустой состав заказа";
         foreach (var i in v.Items)
         {
-            if (string.IsNullOrWhiteSpace(i.Sku)) return $"Позиция без SKU: «{i.Sku}»";
+            if (string.IsNullOrWhiteSpace(i.Sku)) return "Позиция без SKU";
             if (i.Quantity <= 0) return $"Некорректное количество {i.Quantity} по SKU {i.Sku}";
         }
         return null;
@@ -202,10 +236,18 @@ public sealed class OrderProcessor
             return;
         }
 
-        // Боевой режим: PUT /order/{id}. Точную схему custom_fields подтвердить на go-live.
-        object payload = statusId > 0
-            ? new { status_id = statusId, custom_fields = fields }
-            : new { custom_fields = fields };
+        object payload = statusId > 0 ? new { status_id = statusId, custom_fields = fields } : new { custom_fields = fields };
         await _keyCrm.UpdateOrderAsync(orderId, payload, ct);
     }
+
+    private static long? GetLong(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt64()
+        : e.TryGetProperty(name, out var s) && s.ValueKind == JsonValueKind.String && long.TryParse(s.GetString(), out var l) ? l : null;
+
+    private static decimal? GetDecimal(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDecimal()
+        : e.TryGetProperty(name, out var s) && s.ValueKind == JsonValueKind.String && decimal.TryParse(s.GetString(), NumberStyles.Any, CultureInfo.InvariantCulture, out var dd) ? dd : null;
+
+    private static string? GetString(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() : null;
 }

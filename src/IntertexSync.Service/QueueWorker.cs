@@ -54,6 +54,14 @@ public sealed class QueueWorker : BackgroundService
                 _log.LogError(ex, "Событие {Id}: непредвиденная ошибка", evt.Id);
                 await _queue.MarkFailedAsync(evt.Id, ex.Message, retryable: true, stoppingToken);
             }
+            catch (Exception ex)
+            {
+                // Сбой самого DequeueAsync (evt ещё null): нельзя дать исключению уронить
+                // BackgroundService (иначе весь сервис остановится). Логируем и продолжаем.
+                _log.LogError(ex, "Ошибка извлечения события из очереди — продолжаю");
+                try { await Task.Delay(IdleDelay, stoppingToken); }
+                catch (OperationCanceledException) { break; }
+            }
         }
         _log.LogInformation("QueueWorker остановлен");
     }
