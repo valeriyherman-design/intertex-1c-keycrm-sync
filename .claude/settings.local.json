@@ -54,7 +54,9 @@
       "Bash(grep -rl \"interface IKeyCrmClient\" src/)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Этап 4-5: сквозной цикл заказа \\(OrderProcessor\\) + E2E на живом KeyCRM, тесты 56/56 *)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Актуализация PROJECT_STATUS: Этапы 1-5, готовность цикла заказа, шаги *)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Ревью цикла заказа: исправлены 10 дефектов \\(хост-стоп, retry, замена резерва, чексумма\\) *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Ревью цикла заказа: исправлены 10 дефектов \\(хост-стоп, retry, замена резерва, чексумма\\) *)",
+      "Bash(python3 -c \"import json; d=json.load\\(open\\('handover-1c/test-cases/cases.json'\\)\\); print\\('cases.json valid:', len\\(d['cases']\\), 'кейсов'\\)\")",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Пакет передачи 1С-специалисту: 14 документов + test-cases \\(комплектен по уставу\\) *)"
     ]
   }
 }
