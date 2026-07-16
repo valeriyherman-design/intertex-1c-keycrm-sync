@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{3E837668-C7CA-468E-88DB-334BBB3CE28F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntertexSync.Core", "src\IntertexSync.Core\IntertexSync.Core.csproj", "{E9A47CF5-8BEA-4939-9F05-EFB73D58AF9F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntertexSync.Infrastructure", "src\IntertexSync.Infrastructure\IntertexSync.Infrastructure.csproj", "{498FF6D5-0010-46DE-BAFB-77BFF5500635}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntertexSync.Service", "src\IntertexSync.Service\IntertexSync.Service.csproj", "{ACDD0E50-B5EB-49A1-9320-1487D84390B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C55022C3-7D6F-4AF9-ADCF-CC20BE5167AF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IntertexSync.Tests", "tests\IntertexSync.Tests\IntertexSync.Tests.csproj", "{F394531E-3ABD-4780-B558-2303C6B1093F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{E9A47CF5-8BEA-4939-9F05-EFB73D58AF9F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E9A47CF5-8BEA-4939-9F05-EFB73D58AF9F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E9A47CF5-8BEA-4939-9F05-EFB73D58AF9F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E9A47CF5-8BEA-4939-9F05-EFB73D58AF9F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{498FF6D5-0010-46DE-BAFB-77BFF5500635}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{498FF6D5-0010-46DE-BAFB-77BFF5500635}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{498FF6D5-0010-46DE-BAFB-77BFF5500635}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{498FF6D5-0010-46DE-BAFB-77BFF5500635}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ACDD0E50-B5EB-49A1-9320-1487D84390B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ACDD0E50-B5EB-49A1-9320-1487D84390B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ACDD0E50-B5EB-49A1-9320-1487D84390B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ACDD0E50-B5EB-49A1-9320-1487D84390B1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F394531E-3ABD-4780-B558-2303C6B1093F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F394531E-3ABD-4780-B558-2303C6B1093F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F394531E-3ABD-4780-B558-2303C6B1093F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F394531E-3ABD-4780-B558-2303C6B1093F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{E9A47CF5-8BEA-4939-9F05-EFB73D58AF9F} = {3E837668-C7CA-468E-88DB-334BBB3CE28F}
+		{498FF6D5-0010-46DE-BAFB-77BFF5500635} = {3E837668-C7CA-468E-88DB-334BBB3CE28F}
+		{ACDD0E50-B5EB-49A1-9320-1487D84390B1} = {3E837668-C7CA-468E-88DB-334BBB3CE28F}
+		{F394531E-3ABD-4780-B558-2303C6B1093F} = {C55022C3-7D6F-4AF9-ADCF-CC20BE5167AF}
+	EndGlobalSection
+EndGlobal

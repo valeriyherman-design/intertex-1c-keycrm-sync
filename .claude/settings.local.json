@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init *)",
+      "Bash(mkdir -p docs handover-1c handover-1c/test-cases)",
+      "WebSearch",
+      "WebFetch(domain:help.keycrm.app)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:openapi.keycrm.app)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(chmod 600 \"/private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/keycrm/apikey\")",
+      "Bash(curl -sS -w '\\\\nHTTP_STATUS:%{http_code}\\\\n' -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Accept: application/json' https://openapi.keycrm.app/v1/order/source?limit=50)",
+      "Bash(python3 -)",
+      "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' '__TRACKED_VAR__/offers/stocks?limit=2&filter\\\\[details\\\\]=true')",
+      "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' __TRACKED_VAR__/custom-fields?limit=50)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(node -e ' *)",
+      "Bash(npx -y js-yaml handover-1c/openapi-1c-integration.yaml)",
+      "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' __TRACKED_VAR__/users?limit=50)",
+      "Bash(command -v dotnet)",
+      "Bash(dotnet --list-sdks)",
+      "Bash(command -v brew)",
+      "Bash(brew list *)",
+      "Read(//usr/local/share/**)",
+      "Read(//opt/homebrew/bin/**)",
+      "Read(//Users/germandaniel/.dotnet/**)",
+      "Bash(sw_vers)",
+      "Bash(curl -sSL https://dot.net/v1/dotnet-install.sh -o /private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/dotnet-install.sh)",
+      "Bash(chmod +x /private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/dotnet-install.sh)",
+      "Bash(/private/tmp/claude-501/-Users-germandaniel-keycrm--1C/6ac30e14-f3cb-4ea3-9ac9-f926feb9ed4c/scratchpad/dotnet-install.sh --channel 8.0 --install-dir /Users/germandaniel/.dotnet)"
+    ]
+  }
+}

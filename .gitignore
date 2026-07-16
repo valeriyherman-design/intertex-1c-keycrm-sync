@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+logs/
+data/
+*.db
+*.db-shm
+*.db-wal
+secrets.json
+.DS_Store

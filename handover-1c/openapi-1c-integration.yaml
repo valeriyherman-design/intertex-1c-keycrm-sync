@@ -1,0 +1,534 @@
+openapi: "3.0.3"
+info:
+  title: "1C:УТП Integration API for KeyCRM (extension .cfe)"
+  version: "0.1.0-draft"
+  description: >
+    Контракт HTTP-сервиса расширения 1С:УТП для Украины.
+    Потребитель — интеграционный сервис KeyCRM (middleware .NET 8).
+    Все суммы — USD (DEC-008). Все POST идемпотентны по X-Idempotency-Key.
+servers:
+  - url: "https://{host}/{base}/hs/keycrm/v1"
+    variables:
+      host: { default: "1c-server.local" }
+      base: { default: "utp_test" }
+security:
+  - basicAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Проверка доступности
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok] }
+                  config: { type: string }
+                  extension_version: { type: string }
+                  time: { type: string, format: date-time }
+
+  /warehouses:
+    get:
+      summary: Список складов (6 мест хранения)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Warehouse" }
+
+  /products:
+    get:
+      summary: Каталог номенклатуры с характеристиками и ценами
+      parameters:
+        - { name: updated_since, in: query, schema: { type: string, format: date-time } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 100, maximum: 500 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Product" }
+                      meta: { $ref: "#/components/schemas/PageMeta" }
+
+  /stocks:
+    get:
+      summary: Остатки по складу (quantity/reserved/available)
+      parameters:
+        - { name: warehouse_guid, in: query, schema: { type: string } }
+        - { name: updated_since, in: query, schema: { type: string, format: date-time } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 500 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/StockRow" }
+                      meta: { $ref: "#/components/schemas/PageMeta" }
+
+  /customers:
+    post:
+      summary: Найти или создать контрагента (анти-дубли по id/телефону/email)
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/DryRun" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/CustomerResponse" }
+        "201": { $ref: "#/components/responses/CustomerResponse" }
+        "400": { $ref: "#/components/responses/Error" }
+
+  /orders:
+    post:
+      summary: Создать/обновить Заказ покупателя (идемпотентно по keycrm_order_id)
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/DryRun" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/OrderRequest" }
+      responses:
+        "201":
+          description: Создан/обновлён
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/DocumentRef" }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /orders/{keycrmOrderId}/reserve:
+    post:
+      summary: Резервирование всего состава заказа
+      parameters:
+        - { $ref: "#/components/parameters/KeycrmOrderId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                warehouse_guid: { type: string }
+      responses:
+        "200":
+          description: Резерв установлен
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/StockRow" }
+        "409": { $ref: "#/components/responses/Error" }
+    delete:
+      summary: Снятие резерва (идемпотентно)
+      parameters:
+        - { $ref: "#/components/parameters/KeycrmOrderId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+      responses:
+        "200":
+          description: Резерв снят (или уже был снят — already=true)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      already: { type: boolean }
+
+  /orders/{keycrmOrderId}/ship:
+    post:
+      summary: Создать и провести Реализацию (списание)
+      parameters:
+        - { $ref: "#/components/parameters/KeycrmOrderId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items_checksum]
+              properties:
+                items_checksum: { type: string, description: "sha256 состава заказа" }
+                post_document: { type: boolean, default: true }
+      responses:
+        "201":
+          description: Реализация проведена
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/RealizationRef" }
+        "409": { $ref: "#/components/responses/Error" }
+        "422": { $ref: "#/components/responses/Error" }
+
+  /orders/{keycrmOrderId}/return:
+    post:
+      summary: Возврат от покупателя (исходная реализация не удаляется)
+      parameters:
+        - { $ref: "#/components/parameters/KeycrmOrderId" }
+        - { $ref: "#/components/parameters/IdempotencyKey" }
+        - { $ref: "#/components/parameters/DryRun" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                    required: [sku, quantity]
+                    properties:
+                      sku: { type: string }
+                      quantity: { type: number }
+                reason: { type: string }
+                full_return: { type: boolean, default: false }
+      responses:
+        "201":
+          description: Возврат проведён
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/DocumentRef" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /orders/{keycrmOrderId}/status:
+    get:
+      summary: Состояние всех документов 1С по заказу
+      parameters: [ { $ref: "#/components/parameters/KeycrmOrderId" } ]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/OrderStatus" }
+        "404": { $ref: "#/components/responses/Error" }
+
+  /payments:
+    post:
+      summary: Регистрация оплаты (идемпотентно по keycrm_payment_id)
+      parameters: [ { $ref: "#/components/parameters/IdempotencyKey" }, { $ref: "#/components/parameters/DryRun" } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentRequest" }
+      responses:
+        "201":
+          description: Платёжный документ создан
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data: { $ref: "#/components/schemas/DocumentRef" }
+        "409": { $ref: "#/components/responses/Error" }
+
+  /transfers:
+    get:
+      summary: Проведённые перемещения (для обновления остатков в KeyCRM)
+      parameters:
+        - { name: since, in: query, schema: { type: string, format: date-time } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/SuccessEnvelope"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: "#/components/schemas/Transfer" }
+
+components:
+  securitySchemes:
+    basicAuth: { type: http, scheme: basic }
+
+  parameters:
+    IdempotencyKey:
+      name: X-Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, maxLength: 128 }
+      description: Повтор с тем же ключом возвращает прежний результат, не создаёт дубль.
+    DryRun:
+      name: X-Dry-Run
+      in: header
+      required: false
+      schema: { type: boolean, default: false }
+      description: true — валидация без записи/проведения документов.
+    KeycrmOrderId:
+      name: keycrmOrderId
+      in: path
+      required: true
+      schema: { type: integer }
+
+  responses:
+    Error:
+      description: Ошибка (единый формат)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorEnvelope" }
+    CustomerResponse:
+      description: Контрагент найден/создан
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/SuccessEnvelope"
+              - type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      guid: { type: string }
+                      created: { type: boolean }
+                      matched_by: { type: string, enum: [keycrm_id, phone, email, none] }
+
+  schemas:
+    SuccessEnvelope:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, enum: [true] }
+
+    ErrorEnvelope:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, enum: [false] }
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [AUTH_FAILED, VALIDATION_ERROR, SKU_NOT_FOUND, WAREHOUSE_NOT_FOUND,
+                     CUSTOMER_NOT_FOUND, ORDER_NOT_FOUND, INSUFFICIENT_STOCK,
+                     ALREADY_PROCESSED, ORDER_MODIFIED, PERIOD_CLOSED, POSTING_ERROR,
+                     CURRENCY_NOT_SUPPORTED, LOCKED, INTERNAL_ERROR]
+            message: { type: string }
+            details: { type: array, items: { type: object } }
+            retryable: { type: boolean }
+
+    PageMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+
+    Warehouse:
+      type: object
+      required: [guid, name]
+      properties:
+        guid: { type: string }
+        code: { type: string }
+        name: { type: string }
+        is_active: { type: boolean }
+
+    Product:
+      type: object
+      required: [guid, name, unit, variants]
+      properties:
+        guid: { type: string }
+        code: { type: string }
+        name: { type: string }
+        category: { type: string }
+        unit: { type: string, description: "шт | м | ..." }
+        unit_allows_fraction: { type: boolean }
+        is_archived: { type: boolean }
+        variants:
+          type: array
+          items:
+            type: object
+            required: [sku]
+            properties:
+              characteristic_guid: { type: string, nullable: true }
+              characteristic: { type: string, nullable: true }
+              sku: { type: string }
+              barcode: { type: string, nullable: true }
+              purchased_price: { type: number }
+              prices:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    price_type: { type: string }
+                    price: { type: number }
+                    currency: { type: string, enum: [USD] }
+
+    StockRow:
+      type: object
+      required: [sku, warehouse_guid, quantity]
+      properties:
+        sku: { type: string }
+        warehouse_guid: { type: string }
+        quantity: { type: number }
+        reserved: { type: number }
+        available: { type: number }
+
+    CustomerRequest:
+      type: object
+      required: [keycrm_buyer_id, full_name]
+      properties:
+        keycrm_buyer_id: { type: integer }
+        full_name: { type: string }
+        phones: { type: array, items: { type: string } }
+        emails: { type: array, items: { type: string } }
+        comment: { type: string }
+
+    OrderRequest:
+      type: object
+      required: [keycrm_order_id, customer_guid, warehouse_guid, currency, items, items_checksum]
+      properties:
+        keycrm_order_id: { type: integer }
+        customer_guid: { type: string }
+        warehouse_guid: { type: string }
+        manager_keycrm_id: { type: integer, nullable: true }
+        currency: { type: string, enum: [USD] }
+        comment: { type: string }
+        items_checksum: { type: string }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [sku, quantity, price]
+            properties:
+              sku: { type: string }
+              quantity: { type: number, description: "дробное для метража (12.5)" }
+              price: { type: number }
+              discount_percent: { type: number, default: 0 }
+              sum: { type: number }
+
+    DocumentRef:
+      type: object
+      required: [guid, number]
+      properties:
+        guid: { type: string }
+        number: { type: string }
+        date: { type: string, format: date-time }
+        posted: { type: boolean }
+
+    RealizationRef:
+      type: object
+      required: [realization_guid, number, posted]
+      properties:
+        realization_guid: { type: string }
+        number: { type: string }
+        date: { type: string, format: date-time }
+        posted: { type: boolean }
+
+    OrderStatus:
+      type: object
+      properties:
+        order: { $ref: "#/components/schemas/DocumentRef" }
+        reserve:
+          type: object
+          properties:
+            active: { type: boolean }
+            quantity_total: { type: number }
+        realization: { $ref: "#/components/schemas/DocumentRef" }
+        returns:
+          type: array
+          items: { $ref: "#/components/schemas/DocumentRef" }
+        payments:
+          type: array
+          items:
+            type: object
+            properties:
+              guid: { type: string }
+              amount: { type: number }
+
+    PaymentRequest:
+      type: object
+      required: [keycrm_payment_id, keycrm_order_id, amount, currency, method]
+      properties:
+        keycrm_payment_id: { type: integer }
+        keycrm_order_id: { type: integer }
+        amount: { type: number }
+        currency: { type: string, enum: [USD] }
+        method: { type: string, description: "alias метода оплаты KeyCRM (10 шт., см. mapping)" }
+        date: { type: string, format: date-time }
+
+    Transfer:
+      type: object
+      properties:
+        guid: { type: string }
+        number: { type: string }
+        date: { type: string, format: date-time }
+        warehouse_from_guid: { type: string }
+        warehouse_to_guid: { type: string }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              sku: { type: string }
+              quantity: { type: number }
