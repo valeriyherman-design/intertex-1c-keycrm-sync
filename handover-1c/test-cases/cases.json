@@ -1,89 +1,36 @@
 {
-  "note": "Плейсхолдеры <WH_GUID>, <SKU_шт>, <SKU_ткань>, <CTR_GUID> подставить из тестовой базы. Все dryRun=true — репетиция.",
+  "note": "Связная последовательность для ТЕСТОВОЙ базы. Выполнять ПО ПОРЯДКУ (кейсы зависят от предыдущих: сначала создаются контрагент и заказы, затем резерв/реализация/возврат). dryRun=false — намеренно: на тестовой базе проверяем реальные документы и проводки. ВАЖНО: в .epf операция upsert_order в dryRun откатывает транзакцию и НЕ сохраняет заказ, поэтому в чистом dryRun последующие reserve/ship вернут ORDER_NOT_FOUND — это by design, dryRun предназначен для боевой репетиции, а не для сквозного прогона. Плейсхолдеры <WH_GUID>, <SKU_шт>, <SKU_ткань>, <SKU_хар>, <SKU_дефицит> (остаток МЕНЬШЕ запрошенного), <CTR_GUID> подставить из базы.",
   "cases": [
-    {
-      "name": "01_health",
-      "operation": "health",
-      "args": {},
-      "expected": { "success": true, "data": { "status": "ok" } }
-    },
-    {
-      "name": "02_warehouses",
-      "operation": "warehouses",
-      "args": {},
-      "expected": { "success": true, "data_len": 6 }
-    },
-    {
-      "name": "04_stocks",
-      "operation": "stocks",
-      "args": { "warehouseGuid": "<WH_GUID>" },
-      "expected": { "success": true, "data_item_keys": ["sku", "warehouseGuid", "quantity", "reserved", "available"] }
-    },
-    {
-      "name": "05_customer_new",
-      "operation": "upsert_customer",
-      "args": { "request": { "keycrmBuyerId": 900001, "fullName": "Тест Клієнт", "phones": ["+380671112233"], "emails": [] }, "idempotencyKey": "t-cust-1", "dryRun": true },
-      "expected": { "success": true, "data": { "created": true } }
-    },
-    {
-      "name": "06_customer_dup_phone",
-      "operation": "upsert_customer",
-      "args": { "request": { "keycrmBuyerId": 900002, "fullName": "Тест Клієнт 2", "phones": ["+380671112233"], "emails": [] }, "idempotencyKey": "t-cust-2", "dryRun": true },
-      "expected": { "success": true, "data": { "created": false, "matchedBy": "phone" } }
-    },
-    {
-      "name": "07_order_piece",
-      "operation": "upsert_order",
-      "args": { "request": { "keycrmOrderId": 900001, "customerGuid": "<CTR_GUID>", "warehouseGuid": "<WH_GUID>", "currency": "USD", "items": [ { "sku": "<SKU_шт>", "quantity": 3, "price": 10.0, "sum": 30.0 } ], "itemsChecksum": "chk-900001" }, "idempotencyKey": "t-ord-1", "dryRun": true },
-      "expected": { "success": true, "data_keys": ["guid", "number"] }
-    },
-    {
-      "name": "08_order_fabric_12_5",
-      "operation": "upsert_order",
-      "args": { "request": { "keycrmOrderId": 900002, "customerGuid": "<CTR_GUID>", "warehouseGuid": "<WH_GUID>", "currency": "USD", "items": [ { "sku": "<SKU_ткань>", "quantity": 12.5, "price": 6.6, "sum": 82.5 } ], "itemsChecksum": "chk-900002" }, "idempotencyKey": "t-ord-2", "dryRun": true },
-      "expected": { "success": true, "comment": "дробное 12.5 пог.м. принимается" }
-    },
-    {
-      "name": "10_reserve_ok",
-      "operation": "reserve",
-      "args": { "keycrmOrderId": 900001, "warehouseGuid": "<WH_GUID>", "idempotencyKey": "t-res-1", "dryRun": true },
-      "expected": { "success": true, "comment": "остатки по позициям с reserved" }
-    },
-    {
-      "name": "11_reserve_insufficient",
-      "operation": "reserve",
-      "args": { "keycrmOrderId": 900099, "warehouseGuid": "<WH_GUID>", "idempotencyKey": "t-res-99", "dryRun": true },
-      "expected": { "success": false, "error_code": "INSUFFICIENT_STOCK", "comment": "details по дефицитным позициям" }
-    },
-    {
-      "name": "14_ship",
-      "operation": "ship",
-      "args": { "keycrmOrderId": 900001, "itemsChecksum": "chk-900001", "post_document": true, "idempotencyKey": "t-ship-1", "dryRun": true },
-      "expected": { "success": true, "data": { "posted": true } }
-    },
-    {
-      "name": "15_ship_modified",
-      "operation": "ship",
-      "args": { "keycrmOrderId": 900001, "itemsChecksum": "WRONG-checksum", "post_document": true, "idempotencyKey": "t-ship-2", "dryRun": true },
-      "expected": { "success": false, "error_code": "ORDER_MODIFIED" }
-    },
-    {
-      "name": "17_return_partial",
-      "operation": "create_return",
-      "args": { "request": { "keycrmOrderId": 900001, "items": [ { "sku": "<SKU_шт>", "quantity": 1 } ], "reason": "брак", "fullReturn": false }, "idempotencyKey": "t-ret-1", "dryRun": true },
-      "expected": { "success": true, "comment": "реализация не удаляется" }
-    },
-    {
-      "name": "18_payment",
-      "operation": "register_payment",
-      "args": { "request": { "keycrmPaymentId": 900500, "keycrmOrderId": 900001, "amount": 30.0, "currency": "USD", "method": "cash", "date": "2026-07-16T10:00:00Z" }, "idempotencyKey": "t-pay-1", "dryRun": true },
-      "expected": { "success": true, "comment": "повтор → тот же документ" }
-    },
-    {
-      "name": "19_order_state",
-      "operation": "order_state",
-      "args": { "keycrmOrderId": 900001 },
-      "expected": { "success": true, "data_keys": ["order", "reserve", "realization"] }
-    }
+    { "name": "01_health", "operation": "health", "args": {}, "expected": { "success": true, "data": { "status": "ok" } } },
+    { "name": "02_warehouses", "operation": "warehouses", "args": {}, "expected": { "success": true, "data_len": 6 } },
+    { "name": "03_products_page1", "operation": "products", "args": { "page": 1, "limit": 50 }, "expected": { "success": true, "data_keys": ["data", "meta"] } },
+    { "name": "04_stocks", "operation": "stocks", "args": { "warehouseGuid": "<WH_GUID>" }, "expected": { "success": true, "data_item_keys": ["sku", "warehouseGuid", "quantity", "reserved", "available"] } },
+
+    { "name": "05_customer_new", "operation": "upsert_customer", "args": { "request": { "keycrmBuyerId": 900001, "fullName": "Тест Клієнт", "phones": ["+380671112233"], "emails": [] }, "idempotencyKey": "t-cust-1", "dryRun": false }, "expected": { "success": true, "data": { "created": true } }, "note": "upsert_customer ПИШЕТ даже при dryRun — на чистой базе даёт created:true" },
+    { "name": "06_customer_dup_phone", "operation": "upsert_customer", "args": { "request": { "keycrmBuyerId": 900002, "fullName": "Інший Клієнт", "phones": ["+380671112233"], "emails": [] }, "idempotencyKey": "t-cust-2", "dryRun": false }, "expected": { "success": true, "data": { "created": false, "matchedBy": "phone" } } },
+
+    { "name": "07_order_piece", "operation": "upsert_order", "args": { "request": { "keycrmOrderId": 900001, "customerGuid": "<CTR_GUID>", "warehouseGuid": "<WH_GUID>", "currency": "USD", "items": [ { "sku": "<SKU_шт>", "quantity": 3, "price": 10.0, "sum": 30.0 } ], "itemsChecksum": "chk-900001" }, "idempotencyKey": "t-ord-1", "dryRun": false }, "expected": { "success": true, "data_keys": ["guid", "number"] } },
+    { "name": "08_order_fabric_12_5", "operation": "upsert_order", "args": { "request": { "keycrmOrderId": 900002, "customerGuid": "<CTR_GUID>", "warehouseGuid": "<WH_GUID>", "currency": "USD", "items": [ { "sku": "<SKU_ткань>", "quantity": 12.5, "price": 6.6, "sum": 82.5 } ], "itemsChecksum": "chk-900002" }, "idempotencyKey": "t-ord-2", "dryRun": false }, "expected": { "success": true, "comment": "дробное 12.5 пог.м. принимается" } },
+    { "name": "09_order_characteristic", "operation": "upsert_order", "args": { "request": { "keycrmOrderId": 900003, "customerGuid": "<CTR_GUID>", "warehouseGuid": "<WH_GUID>", "currency": "USD", "items": [ { "sku": "<SKU_хар>", "quantity": 1, "price": 30.8, "sum": 30.8 } ], "itemsChecksum": "chk-900003" }, "idempotencyKey": "t-ord-3", "dryRun": false }, "expected": { "success": true, "comment": "SKU с характеристикой (цвет) → характеристика в ТЧ" } },
+    { "name": "10_order_deficit", "operation": "upsert_order", "args": { "request": { "keycrmOrderId": 900099, "customerGuid": "<CTR_GUID>", "warehouseGuid": "<WH_GUID>", "currency": "USD", "items": [ { "sku": "<SKU_дефицит>", "quantity": 999999, "price": 1.0, "sum": 999999.0 } ], "itemsChecksum": "chk-900099" }, "idempotencyKey": "t-ord-99", "dryRun": false }, "expected": { "success": true, "comment": "заказ с заведомо избыточным количеством — для теста нехватки" } },
+
+    { "name": "11_reserve_ok", "operation": "reserve", "args": { "keycrmOrderId": 900001, "warehouseGuid": "<WH_GUID>", "idempotencyKey": "t-res-1", "dryRun": false }, "expected": { "success": true, "comment": "остатки по позициям с reserved" } },
+    { "name": "12_reserve_repeat_idempotent", "operation": "reserve", "args": { "keycrmOrderId": 900001, "warehouseGuid": "<WH_GUID>", "idempotencyKey": "t-res-1", "dryRun": false }, "expected": { "success": true, "comment": "повтор с тем же ключом — без второго резерва" } },
+    { "name": "13_reserve_insufficient", "operation": "reserve", "args": { "keycrmOrderId": 900099, "warehouseGuid": "<WH_GUID>", "idempotencyKey": "t-res-99", "dryRun": false }, "expected": { "success": false, "error_code": "INSUFFICIENT_STOCK", "comment": "details по дефицитным позициям; фиктивного резерва нет" } },
+
+    { "name": "14_reserve_for_unreserve", "operation": "reserve", "args": { "keycrmOrderId": 900002, "warehouseGuid": "<WH_GUID>", "idempotencyKey": "t-res-2", "dryRun": false }, "expected": { "success": true } },
+    { "name": "15_unreserve", "operation": "unreserve", "args": { "keycrmOrderId": 900002, "idempotencyKey": "t-unres-2", "dryRun": false }, "expected": { "success": true, "comment": "резерв снят; повтор тоже success (идемпотентно)" } },
+
+    { "name": "16_ship_ok", "operation": "ship", "args": { "keycrmOrderId": 900001, "itemsChecksum": "chk-900001", "post_document": true, "idempotencyKey": "t-ship-1", "dryRun": false }, "expected": { "success": true, "data": { "posted": true }, "comment": "реализация проведена; остаток списан" } },
+    { "name": "17_ship_repeat_no_double", "operation": "ship", "args": { "keycrmOrderId": 900001, "itemsChecksum": "chk-900001", "post_document": true, "idempotencyKey": "t-ship-1b", "dryRun": false }, "expected": { "success": true, "comment": "тот же документ — без повторного списания" } },
+    { "name": "18_ship_modified", "operation": "ship", "args": { "keycrmOrderId": 900003, "itemsChecksum": "WRONG-checksum", "post_document": true, "idempotencyKey": "t-ship-3", "dryRun": false }, "expected": { "success": false, "error_code": "ORDER_MODIFIED", "comment": "состав не совпал с сохранённым при резерве" } },
+
+    { "name": "19_return_partial", "operation": "create_return", "args": { "request": { "keycrmOrderId": 900001, "items": [ { "sku": "<SKU_шт>", "quantity": 1 } ], "reason": "брак", "fullReturn": false }, "idempotencyKey": "t-ret-1", "dryRun": false }, "expected": { "success": true, "comment": "возврат проведён; исходная реализация НЕ удалена" } },
+    { "name": "20_payment", "operation": "register_payment", "args": { "request": { "keycrmPaymentId": 900500, "keycrmOrderId": 900001, "amount": 30.0, "currency": "USD", "method": "cash", "date": "2026-07-16T10:00:00Z" }, "idempotencyKey": "t-pay-1", "dryRun": false }, "expected": { "success": true, "comment": "ПКО; повтор → тот же документ" } },
+    { "name": "21_order_state", "operation": "order_state", "args": { "keycrmOrderId": 900001 }, "expected": { "success": true, "data_keys": ["order", "reserve", "realization"] } }
+  ],
+  "manual_scenarios": [
+    { "name": "closed_period", "operation": "ship", "how": "Установить дату документа в закрытый период (настройка базы) и провести реализацию", "expected": "success:false, error_code PERIOD_CLOSED" },
+    { "name": "two_managers_same_item", "how": "Создать два заказа на один товар, зарезервировать оба; второй должен получить INSUFFICIENT_STOCK при недостатке — двойного списания быть не должно", "expected": "нет двойного списания" }
   ]
 }
