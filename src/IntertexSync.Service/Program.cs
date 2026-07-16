@@ -4,6 +4,7 @@ using System.Text.Json;
 using IntertexSync.Core.Contracts;
 using IntertexSync.Infrastructure.KeyCrm;
 using IntertexSync.Infrastructure.OneC;
+using IntertexSync.Infrastructure.Orders;
 using IntertexSync.Infrastructure.Storage;
 using IntertexSync.Infrastructure.Sync;
 using IntertexSync.Service;
@@ -60,6 +61,10 @@ else
 // --- Синхронизация остатков (DEC-010). DryRun по умолчанию true (ГЕЙТ R-12). ---
 builder.Services.Configure<StockSyncOptions>(builder.Configuration.GetSection("StockSync"));
 builder.Services.AddSingleton<StockSyncService>();
+
+// --- Оркестрация заказов (Этап 4-5). Scoped: корректная работа с HTTP-клиентом. ---
+builder.Services.Configure<OrderSyncOptions>(builder.Configuration.GetSection("OrderSync"));
+builder.Services.AddScoped<OrderProcessor>();
 
 // --- Фоновый воркер очереди ---
 builder.Services.AddHostedService<QueueWorker>();

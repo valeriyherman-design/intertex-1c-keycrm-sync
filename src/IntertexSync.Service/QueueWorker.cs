@@ -1,25 +1,27 @@
+using System.Text.Json;
 using IntertexSync.Core.Contracts;
 using IntertexSync.Core.Models;
+using IntertexSync.Infrastructure.Orders;
+using Microsoft.Extensions.Options;
 
 namespace IntertexSync.Service;
 
 /// <summary>
-/// Фоновый обработчик очереди событий. Берёт события по одному (события одного
-/// заказа — строго последовательно, гарантирует IEventQueue.DequeueAsync),
-/// выполняет обработчик, при сбое планирует повтор с экспоненциальной задержкой.
-/// Обработчики конкретных типов событий добавляются на Этапах 3–6.
+/// Фоновый обработчик очереди. Берёт события по одному (события одного заказа —
+/// строго последовательно, IEventQueue гарантирует), маршрутизирует по статусу на
+/// действия OrderProcessor. Сбой → повтор с backoff; бизнес-ошибка 1С → без повтора.
 /// </summary>
 public sealed class QueueWorker : BackgroundService
 {
     private readonly IEventQueue _queue;
-    private readonly IServiceProvider _services;
+    private readonly IServiceScopeFactory _scopes;
     private readonly ILogger<QueueWorker> _log;
     private static readonly TimeSpan IdleDelay = TimeSpan.FromSeconds(2);
 
-    public QueueWorker(IEventQueue queue, IServiceProvider services, ILogger<QueueWorker> log)
+    public QueueWorker(IEventQueue queue, IServiceScopeFactory scopes, ILogger<QueueWorker> log)
     {
         _queue = queue;
-        _services = services;
+        _scopes = scopes;
         _log = log;
     }
 
@@ -32,11 +34,7 @@ public sealed class QueueWorker : BackgroundService
             try
             {
                 evt = await _queue.DequeueAsync(stoppingToken);
-                if (evt is null)
-                {
-                    await Task.Delay(IdleDelay, stoppingToken);
-                    continue;
-                }
+                if (evt is null) { await Task.Delay(IdleDelay, stoppingToken); continue; }
 
                 _log.LogInformation("Обработка события {Id} {Type} (попытка {Attempt})", evt.Id, evt.Type, evt.Attempts);
                 await HandleAsync(evt, stoppingToken);
@@ -60,17 +58,71 @@ public sealed class QueueWorker : BackgroundService
         _log.LogInformation("QueueWorker остановлен");
     }
 
-    private Task HandleAsync(SyncEvent evt, CancellationToken ct)
+    private async Task HandleAsync(SyncEvent evt, CancellationToken ct)
     {
-        // Маршрутизация по типам событий. Реальные обработчики (резерв, списание,
-        // оплаты, остатки) подключаются на Этапах 3–6 согласно BACKLOG.md.
-        switch (evt.Type)
+        var (orderId, statusId, isPayment) = ParseEvent(evt);
+        if (orderId is null)
         {
-            case "webhook.ping":
-                return Task.CompletedTask;
-            default:
-                _log.LogInformation("Обработчик для {Type} ещё не реализован — событие принято к сведению", evt.Type);
-                return Task.CompletedTask;
+            _log.LogInformation("Событие {Type} без order id — пропущено", evt.Type);
+            return;
+        }
+
+        using var scope = _scopes.CreateScope();
+        var processor = scope.ServiceProvider.GetRequiredService<OrderProcessor>();
+        var opts = scope.ServiceProvider.GetRequiredService<IOptions<OrderSyncOptions>>().Value;
+
+        if (isPayment)
+        {
+            await processor.RegisterPaymentsAsync(orderId.Value, ct);
+            return;
+        }
+
+        if (statusId is null)
+        {
+            _log.LogInformation("Заказ {Order}: событие без статуса — пропущено", orderId);
+            return;
+        }
+
+        OrderProcessResult result;
+        if (opts.ReserveTriggerStatuses.Contains(statusId.Value))
+            result = await processor.ReserveAsync(orderId.Value, ct);
+        else if (opts.ShipTriggerStatuses.Contains(statusId.Value))
+            result = await processor.ShipAsync(orderId.Value, ct);
+        else if (opts.CancelTriggerStatuses.Contains(statusId.Value))
+            result = await processor.CancelAsync(orderId.Value, ct);
+        else
+        {
+            _log.LogInformation("Заказ {Order}: статус {Status} не триггерит действий", orderId, statusId);
+            return;
+        }
+
+        _log.LogInformation("Заказ {Order} [{Action}] → {Outcome}", result.OrderId, result.Action, result.Outcome);
+    }
+
+    /// <summary>Извлечь order id / status id / признак оплаты из полезной нагрузки вебхука.</summary>
+    private (long? OrderId, int? StatusId, bool IsPayment) ParseEvent(SyncEvent evt)
+    {
+        var isPayment = evt.Type.Contains("payment", StringComparison.OrdinalIgnoreCase);
+        try
+        {
+            using var doc = JsonDocument.Parse(evt.PayloadJson);
+            var root = doc.RootElement;
+            var ctx = root.TryGetProperty("context", out var c) ? c : root;
+
+            long? orderId = TryLong(ctx, "id") ?? TryLong(ctx, "order_id");
+            int? statusId = (int?)(TryLong(ctx, "status_id")
+                ?? (ctx.TryGetProperty("status", out var st) && st.ValueKind == JsonValueKind.Object ? TryLong(st, "id") : null));
+            return (orderId, statusId, isPayment);
+        }
+        catch (JsonException)
+        {
+            _log.LogWarning("Событие {Id}: не удалось разобрать payload", evt.Id);
+            return (null, null, isPayment);
         }
     }
+
+    private static long? TryLong(JsonElement e, string name) =>
+        e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetInt64()
+        : e.TryGetProperty(name, out var s) && s.ValueKind == JsonValueKind.String && long.TryParse(s.GetString(), out var l) ? l
+        : null;
 }

@@ -75,11 +75,10 @@ public sealed class Mock1CConnector : I1CConnector
         if (_realizations.ContainsKey(request.KeycrmOrderId) && !_orders[request.KeycrmOrderId].ItemsChecksum.Equals(request.ItemsChecksum, StringComparison.Ordinal))
             throw new Sync1CException(Sync1CErrorCode.OrderModified, "Заказ уже реализован, изменение состава запрещено");
 
-        if (!dryRun)
-        {
-            _orders[request.KeycrmOrderId] = request;
-            _orderWarehouse[request.KeycrmOrderId] = request.WarehouseGuid;
-        }
+        // Заказ сохраняется в моке и в dry-run — чтобы последующий dry-run резерв мог
+        // осмысленно проверить доступность (репетиция). Реальные X-Dry-Run в 1С не пишут.
+        _orders[request.KeycrmOrderId] = request;
+        _orderWarehouse[request.KeycrmOrderId] = request.WarehouseGuid;
         return Task.FromResult(new DocumentRef($"ord-{request.KeycrmOrderId}", $"УТ-{request.KeycrmOrderId:D8}", DateTime.UtcNow, false));
     }
 

@@ -51,7 +51,8 @@
       "Bash(grep -rl \"StockRow1C\" src/)",
       "Bash(grep -rl \"GetStocksAsync\" src/)",
       "Bash(grep -rl \"class Mock1CConnector\" src/)",
-      "Bash(grep -rl \"interface IKeyCrmClient\" src/)"
+      "Bash(grep -rl \"interface IKeyCrmClient\" src/)",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Этап 4-5: сквозной цикл заказа \\(OrderProcessor\\) + E2E на живом KeyCRM, тесты 56/56 *)"
     ]
   }
 }
