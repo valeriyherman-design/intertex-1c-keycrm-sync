@@ -45,7 +45,8 @@
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Аудит каталога KeyCRM \\(чистый\\) + самокоррекция R-12 + консистентность документов *)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Проверка 6 пограничных позиций по 1С: все реальные товары с остатками — исправлять нечего *)",
       "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Accept: application/json' __TRACKED_VAR__/products/2870)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'KeyCRM: исправлена опечатка названия товара 2870 \\(RJ11110..002.11 -> RJ11110.002.11\\) *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'KeyCRM: исправлена опечатка названия товара 2870 \\(RJ11110..002.11 -> RJ11110.002.11\\) *)",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Проверка названий: ~94 форматных опечатки \\(KeyCRM+1С\\); DEC-013 нормализация при выгрузке *)"
     ]
   }
 }
