@@ -20,11 +20,13 @@ public sealed class SqliteStore : IEventQueue, IIdempotencyStore, IMappingStore,
 
     public SqliteStore(string dbPath)
     {
+        // Cache=Private (по умолчанию): с WAL shared-cache не нужен и вреден —
+        // он даёт table-level SQLITE_LOCKED, который busy_timeout НЕ повторяет
+        // (в отличие от SQLITE_BUSY). WAL допускает конкурентных читателей + одного писателя.
         _connectionString = new SqliteConnectionStringBuilder
         {
             DataSource = dbPath,
             Mode = SqliteOpenMode.ReadWriteCreate,
-            Cache = SqliteCacheMode.Shared,
         }.ToString();
         Initialize();
     }

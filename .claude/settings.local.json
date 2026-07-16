@@ -47,7 +47,11 @@
       "Bash(curl -sS -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Accept: application/json' __TRACKED_VAR__/products/2870)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'KeyCRM: исправлена опечатка названия товара 2870 \\(RJ11110..002.11 -> RJ11110.002.11\\) *)",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Проверка названий: ~94 форматных опечатки \\(KeyCRM+1С\\); DEC-013 нормализация при выгрузке *)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Этап 3: StockSyncService — агрегат остатков 6 мест 1С → KeyCRM \\(DEC-010\\), тесты 42/42 *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Этап 3: StockSyncService — агрегат остатков 6 мест 1С → KeyCRM \\(DEC-010\\), тесты 42/42 *)",
+      "Bash(grep -rl \"StockRow1C\" src/)",
+      "Bash(grep -rl \"GetStocksAsync\" src/)",
+      "Bash(grep -rl \"class Mock1CConnector\" src/)",
+      "Bash(grep -rl \"interface IKeyCrmClient\" src/)"
     ]
   }
 }

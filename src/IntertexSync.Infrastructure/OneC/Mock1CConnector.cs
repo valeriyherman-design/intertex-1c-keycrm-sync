@@ -32,6 +32,8 @@ public sealed class Mock1CConnector : I1CConnector
     };
 
     public void SetStock(string sku, string warehouseGuid, decimal qty) => _stock[$"{sku}|{warehouseGuid}"] = qty;
+    /// <summary>Тестовая установка резерва напрямую (в т.ч. над остатком — для проверки зажима available&lt;0).</summary>
+    public void SetReserved(string sku, string warehouseGuid, decimal qty) => _reserved[$"{sku}|{warehouseGuid}"] = qty;
     public decimal GetReserved(string sku, string warehouseGuid) => _reserved.GetValueOrDefault($"{sku}|{warehouseGuid}");
 
     public Task<HealthInfo> HealthAsync(CancellationToken ct = default)

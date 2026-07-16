@@ -18,17 +18,21 @@ public sealed class StockSyncServiceTests : IDisposable
 
     // GUID-ы шести мест из мока
     private const string Shop1 = "wh-shop1-guid", Shop4 = "wh-shop4-guid", Central = "wh-store1-guid";
+    private static readonly string[] AllSix =
+    {
+        "wh-shop1-guid", "wh-shop2-guid", "wh-shop3-guid", "wh-shop4-guid", "wh-store1-guid", "wh-store2-guid",
+    };
 
     public StockSyncServiceTests() => _store = new SqliteStore(_dbPath);
     public void Dispose() { _store.Dispose(); try { File.Delete(_dbPath); } catch { } }
 
     private StockSyncService Service(bool dryRun = true, string[]? active = null) =>
-        new(_oneC, _keyCrm, _store,
+        new(_oneC, _keyCrm, _store, _store,
             Options.Create(new StockSyncOptions
             {
                 KeyCrmWarehouseId = 1,
                 DryRun = dryRun,
-                Active1CWarehouseGuids = active ?? Array.Empty<string>(),
+                Active1CWarehouseGuids = active ?? AllSix, // по умолчанию все 6 (боевая запись требует список)
             }),
             NullLogger<StockSyncService>.Instance);
 
@@ -124,6 +128,87 @@ public sealed class StockSyncServiceTests : IDisposable
         var res = await Service(dryRun: false, active: new[] { Shop1, Shop4, Central }).SyncAsync();
 
         Assert.Equal(10m, _keyCrm.LastPushed[("1", "SKU-A")]); // 99 из legacy не учтён
+    }
+
+    [Fact]
+    public async Task AnomalousEmpty1CRead_AbortsWithoutZeroing_MassZeroGuard()
+    {
+        // Снапшот уже содержит 2 SKU (как будто отправляли раньше)…
+        await _store.SetAsync(1, new[] { ("SKU-A", 10m), ("SKU-B", 5m) });
+        // …а 1С внезапно вернула пусто (лок/реиндекс). Обнулять весь каталог НЕЛЬЗЯ.
+        var res = await Service(dryRun: false).SyncAsync();
+
+        Assert.True(res.Aborted);
+        Assert.Equal(0, res.Pushed);
+        Assert.Empty(_keyCrm.PutCalls);
+        // снапшот не затёрт нулями
+        var snap = await _store.GetAllAsync(1);
+        Assert.Equal(10m, snap["SKU-A"]);
+    }
+
+    [Fact]
+    public async Task LivePush_WithoutActiveWarehouses_Throws()
+    {
+        _oneC.SetStock("SKU-A", Shop1, 10m);
+        var svc = Service(dryRun: false, active: Array.Empty<string>());
+        await Assert.ThrowsAsync<InvalidOperationException>(() => svc.SyncAsync());
+    }
+
+    [Fact]
+    public async Task NegativeAvailable_IsClampedToZero_PerWarehouse()
+    {
+        _oneC.SetStock("SKU-A", Shop1, 10m);
+        _oneC.SetReserved("SKU-A", Shop1, 12m); // over-reserve на Shop1 → available = -2
+        _oneC.SetStock("SKU-A", Shop4, 5m);     // available = 5 на Shop4
+        var res = await Service(dryRun: false).SyncAsync();
+        // -2 зажат в 0, итог 0 + 5 = 5 (а НЕ -2 + 5 = 3 и не отрицательное значение)
+        Assert.Equal(5m, _keyCrm.LastPushed[("1", "SKU-A")]);
+    }
+
+    [Fact]
+    public async Task SecondOverlappingRun_IsSkipped_NoInterleave()
+    {
+        _oneC.SetStock("SKU-A", Shop1, 10m);
+        var release = new TaskCompletionSource();
+        var blocking = new BlockingOneC(_oneC, release.Task);
+        var svc = new StockSyncService(blocking, _keyCrm, _store, _store,
+            Options.Create(new StockSyncOptions { KeyCrmWarehouseId = 1, DryRun = false, Active1CWarehouseGuids = AllSix }),
+            NullLogger<StockSyncService>.Instance);
+
+        var run1 = svc.SyncAsync();                 // застрянет в чтении остатков (держит семафор)
+        while (!blocking.Entered) await Task.Delay(5); // дождаться входа первого прогона
+        var run2 = await svc.SyncAsync();           // перекрывающий — должен быть пропущен сразу
+        Assert.True(run2.Skipped);
+        Assert.Empty(_keyCrm.PutCalls);             // второй ничего не отправил
+
+        release.SetResult();
+        var r1 = await run1;
+        Assert.False(r1.Skipped);                   // первый отработал штатно
+        Assert.Equal(10m, _keyCrm.LastPushed[("1", "SKU-A")]);
+    }
+
+    /// <summary>Обёртка над моком: блокирует чтение остатков до release (для теста перекрытия).</summary>
+    private sealed class BlockingOneC(I1CConnector inner, Task release) : I1CConnector
+    {
+        public volatile bool Entered;
+        public async Task<Core.Models.Page<Core.Models.StockRow1C>> GetStocksAsync(string? wh, DateTime? since, int page, int limit, CancellationToken ct = default)
+        {
+            Entered = true;
+            await release;
+            return await inner.GetStocksAsync(wh, since, page, limit, ct);
+        }
+        public Task<Core.Models.HealthInfo> HealthAsync(CancellationToken ct = default) => inner.HealthAsync(ct);
+        public Task<IReadOnlyList<Core.Models.Warehouse1C>> GetWarehousesAsync(CancellationToken ct = default) => inner.GetWarehousesAsync(ct);
+        public Task<Core.Models.Page<Core.Models.Product1C>> GetProductsAsync(DateTime? u, int p, int l, CancellationToken ct = default) => inner.GetProductsAsync(u, p, l, ct);
+        public Task<Core.Models.CustomerResult> UpsertCustomerAsync(Core.Models.CustomerRequest r, string k, bool d = false, CancellationToken ct = default) => inner.UpsertCustomerAsync(r, k, d, ct);
+        public Task<Core.Models.DocumentRef> UpsertOrderAsync(Core.Models.OrderRequest r, string k, bool d = false, CancellationToken ct = default) => inner.UpsertOrderAsync(r, k, d, ct);
+        public Task<IReadOnlyList<Core.Models.StockRow1C>> ReserveAsync(long o, string w, string k, bool d = false, CancellationToken ct = default) => inner.ReserveAsync(o, w, k, d, ct);
+        public Task<bool> UnreserveAsync(long o, string k, CancellationToken ct = default) => inner.UnreserveAsync(o, k, ct);
+        public Task<Core.Models.DocumentRef> ShipAsync(long o, string c, string k, bool d = false, CancellationToken ct = default) => inner.ShipAsync(o, c, k, d, ct);
+        public Task<Core.Models.DocumentRef> CreateReturnAsync(Core.Models.ReturnRequest r, string k, bool d = false, CancellationToken ct = default) => inner.CreateReturnAsync(r, k, d, ct);
+        public Task<Core.Models.DocumentRef> RegisterPaymentAsync(Core.Models.PaymentRequest r, string k, bool d = false, CancellationToken ct = default) => inner.RegisterPaymentAsync(r, k, d, ct);
+        public Task<Core.Models.OrderState1C> GetOrderStateAsync(long o, CancellationToken ct = default) => inner.GetOrderStateAsync(o, ct);
+        public Task<IReadOnlyList<Core.Models.Transfer1C>> GetTransfersAsync(DateTime s, CancellationToken ct = default) => inner.GetTransfersAsync(s, ct);
     }
 
     private static Core.Models.OrderRequest Order(long id, (string sku, decimal qty) item, string wh) => new(
