@@ -1,0 +1,26 @@
+kind,keycrm_id,keycrm_name,onec_code,onec_guid,onec_name,direction,active,in_stock_sum,default_ship,comment,last_checked
+warehouse,,Основной,,,Магазин № 1,1C->KeyCRM,yes,yes,no,магазин; входит в Σ остатка KeyCRM,2026-07-16
+warehouse,,Основной,,,Магазин № 2,1C->KeyCRM,yes,yes,no,магазин,2026-07-16
+warehouse,,Основной,,,Магазин № 3 (Добробут),1C->KeyCRM,yes,yes,no,магазин,2026-07-16
+warehouse,,Основной,,,Магазин № 4 (Чагор),1C->KeyCRM,yes,yes,yes,основная сборка — склад отгрузки по умолчанию,2026-07-16
+warehouse,,Основной,,,Склад Контейнер,1C->KeyCRM,yes,yes,no,склад,2026-07-16
+warehouse,,Основной,,,Центральный склад,1C->KeyCRM,yes,yes,no,склад,2026-07-16
+warehouse,,,,,Склад,none,no,no,no,пусто/legacy — не синхронизировать,2026-07-16
+warehouse,,,,,БУС,none,no,no,no,пусто/legacy — не синхронизировать,2026-07-16
+warehouse,,,,,Склад 3 (Гараж),none,no,no,no,пусто/legacy — не синхронизировать,2026-07-16
+warehouse,,,,,Склад(2)_Добр,none,no,no,no,пусто/legacy — не синхронизировать,2026-07-16
+payment,1,Оплата наличными (cash),,,,KeyCRM->1C,yes,,,методы оплаты KeyCRM -> документ 1С (ПКО/банк) — заполнить со спец.1С,2026-07-16
+payment,2,Банковская карта,,,,KeyCRM->1C,yes,,,,2026-07-16
+payment,3,Банковский перевод,,,,KeyCRM->1C,yes,,,,2026-07-16
+payment,7,Наличными,,,,KeyCRM->1C,yes,,,,2026-07-16
+payment,8,Оплата по реквизитам ФОП,,,,KeyCRM->1C,yes,,,,2026-07-16
+payment,10,Оплата на счет,,,,KeyCRM->1C,yes,,,,2026-07-16
+manager,2,Valeriy Gherman,,,,KeyCRM->1C,yes,,,role_id=1; сопоставить с пользователем 1С,2026-07-16
+manager,3,Vleriya Valeriy,,,,KeyCRM->1C,yes,,,role_id=2 менеджер,2026-07-16
+manager,6,Вадим Урсуляк,,,,KeyCRM->1C,yes,,,role_id=5 (магазин №2?),2026-07-16
+manager,11,Daniel Gherman,,,,KeyCRM->1C,yes,,,role_id=2 менеджер,2026-07-16
+manager,14,Juliana Inter Tex,,,,KeyCRM->1C,yes,,,role_id=2 менеджер,2026-07-16
+status,26,Перевірка наявності,,,reserve,KeyCRM->1C,yes,,,триггер резерва,2026-07-16
+status,24,Передано на збірку,,,,KeyCRM->1C,yes,,,на сборку,2026-07-16
+status,28,Укомплектовано,,,ship,KeyCRM->1C,yes,,,триггер реализации (после проверки),2026-07-16
+status,19,Скасовано,,,unreserve/return,KeyCRM->1C,yes,,,отмена,2026-07-16
