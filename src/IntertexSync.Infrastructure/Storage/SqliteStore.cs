@@ -7,7 +7,7 @@ namespace IntertexSync.Infrastructure.Storage;
 /// Единое SQLite-хранилище сервиса (WAL): очередь событий, идемпотентность,
 /// таблицы соответствий, журнал конфликтов, снапшот остатков, записанных в KeyCRM (LIM-03).
 /// </summary>
-public sealed class SqliteStore : IEventQueue, IIdempotencyStore, IMappingStore, IConflictLog, IDisposable
+public sealed class SqliteStore : IEventQueue, IIdempotencyStore, IMappingStore, IConflictLog, IStockSnapshot, IDisposable
 {
     private readonly string _connectionString;
     // Экспоненциальный backoff: 30с, 2м, 8м, 32м, 2ч; далее Dead.
@@ -339,6 +339,47 @@ public sealed class SqliteStore : IEventQueue, IIdempotencyStore, IMappingStore,
                 DateTime.Parse(r.GetString(5)).ToUniversalTime()));
         }
         return list;
+    }
+
+    // ---------- IStockSnapshot (LIM-03) ----------
+
+    public async Task<IReadOnlyDictionary<string, decimal>> GetAllAsync(long warehouseId, CancellationToken ct = default)
+    {
+        await using var c = Open();
+        await using var cmd = c.CreateCommand();
+        cmd.CommandText = "SELECT sku, quantity FROM pushed_stocks WHERE warehouse_id = $wh;";
+        cmd.Parameters.AddWithValue("$wh", warehouseId);
+        var result = new Dictionary<string, decimal>();
+        await using var r = await cmd.ExecuteReaderAsync(ct);
+        while (await r.ReadAsync(ct))
+            result[r.GetString(0)] = decimal.Parse(r.GetString(1), System.Globalization.CultureInfo.InvariantCulture);
+        return result;
+    }
+
+    public async Task SetAsync(long warehouseId, IReadOnlyList<(string Sku, decimal Quantity)> stocks, CancellationToken ct = default)
+    {
+        await using var c = Open();
+        await using var tx = (SqliteTransaction)await c.BeginTransactionAsync(ct);
+        await using var cmd = c.CreateCommand();
+        cmd.Transaction = tx;
+        cmd.CommandText = """
+            INSERT INTO pushed_stocks(warehouse_id, sku, quantity, pushed_at)
+            VALUES ($wh, $sku, $qty, $now)
+            ON CONFLICT(warehouse_id, sku) DO UPDATE SET quantity = $qty, pushed_at = $now;
+            """;
+        var pWh = cmd.Parameters.Add("$wh", Microsoft.Data.Sqlite.SqliteType.Integer);
+        var pSku = cmd.Parameters.Add("$sku", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pQty = cmd.Parameters.Add("$qty", Microsoft.Data.Sqlite.SqliteType.Text);
+        var pNow = cmd.Parameters.Add("$now", Microsoft.Data.Sqlite.SqliteType.Text);
+        pNow.Value = DateTime.UtcNow.ToString("O");
+        foreach (var (sku, qty) in stocks)
+        {
+            pWh.Value = warehouseId;
+            pSku.Value = sku;
+            pQty.Value = qty.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            await cmd.ExecuteNonQueryAsync(ct);
+        }
+        await tx.CommitAsync(ct);
     }
 
     public void Dispose() => SqliteConnection.ClearAllPools();

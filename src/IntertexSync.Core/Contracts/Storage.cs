@@ -75,3 +75,14 @@ public interface IConflictLog
 }
 
 public sealed record ConflictRecord(long Id, string Entity, string EntityId, string Description, string? DataJson, DateTime CreatedAtUtc);
+
+/// <summary>
+/// Снапшот остатков, ЗАПИСАННЫХ нами в KeyCRM по складу (LIM-03): Open API KeyCRM не
+/// отдаёт пер-складское чтение, поэтому храним last-pushed сами — чтобы слать в KeyCRM
+/// только изменившиеся SKU и обнаруживать расхождения.
+/// </summary>
+public interface IStockSnapshot
+{
+    Task<IReadOnlyDictionary<string, decimal>> GetAllAsync(long warehouseId, CancellationToken ct = default);
+    Task SetAsync(long warehouseId, IReadOnlyList<(string Sku, decimal Quantity)> stocks, CancellationToken ct = default);
+}

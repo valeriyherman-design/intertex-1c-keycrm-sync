@@ -5,6 +5,7 @@ using IntertexSync.Core.Contracts;
 using IntertexSync.Infrastructure.KeyCrm;
 using IntertexSync.Infrastructure.OneC;
 using IntertexSync.Infrastructure.Storage;
+using IntertexSync.Infrastructure.Sync;
 using IntertexSync.Service;
 using Serilog;
 
@@ -44,6 +45,7 @@ builder.Services.AddSingleton<IEventQueue>(store);
 builder.Services.AddSingleton<IIdempotencyStore>(store);
 builder.Services.AddSingleton<IMappingStore>(store);
 builder.Services.AddSingleton<IConflictLog>(store);
+builder.Services.AddSingleton<IStockSnapshot>(store);
 
 // --- KeyCRM клиент (rate limit 60 rpm + retry) ---
 builder.Services.AddHttpClient<IKeyCrmClient, KeyCrmClient>();
@@ -54,6 +56,10 @@ if (oneCDriver.Equals("com", StringComparison.OrdinalIgnoreCase))
     builder.Services.AddSingleton<I1CConnector, Com1CConnector>();
 else
     builder.Services.AddSingleton<I1CConnector, Mock1CConnector>();
+
+// --- Синхронизация остатков (DEC-010). DryRun по умолчанию true (ГЕЙТ R-12). ---
+builder.Services.Configure<StockSyncOptions>(builder.Configuration.GetSection("StockSync"));
+builder.Services.AddSingleton<StockSyncService>();
 
 // --- Фоновый воркер очереди ---
 builder.Services.AddHostedService<QueueWorker>();
@@ -124,6 +130,18 @@ app.MapPost("/webhook/{secret}", async (string secret, HttpRequest request, IEve
     });
     log.LogInformation("Webhook {Type} принят (enqueued={Enqueued})", type, enqueued);
     return Results.Ok(new { accepted = true, duplicate = !enqueued });
+});
+
+// Ручной запуск сверки остатков (админ-панель). Уважает StockSync:DryRun
+// (по умолчанию true — только показывает, что было бы отправлено, без записи в KeyCRM).
+app.MapPost("/admin/sync/stocks", async (StockSyncService svc, CancellationToken ct) =>
+{
+    var r = await svc.SyncAsync(ct);
+    return Results.Ok(new
+    {
+        r.TotalSkus, r.Changed, r.Pushed, r.DryRun,
+        sample = r.Sample.Select(s => new { s.Sku, s.Old, s.New }),
+    });
 });
 
 app.Run();
