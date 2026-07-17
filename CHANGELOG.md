@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-07-17 - Готов установочный пакет (self-contained, .NET не нужен)
+- Собран self-contained win-x64 пакет сервиса (dist/IntertexSync-win-x64.zip, 45МБ):
+  IntertexSync.Service.exe + бандл .NET runtime + нативный SQLite → на сервере .NET
+  устанавливать НЕ нужно. Вопрос наличия .NET на сервере снят.
+- deploy/: appsettings.server.json (dry-run по умолчанию, ProgId/ProcessorPath под сервер),
+  secrets.example.json (шаблон), install-service.ps1 (регистрация Windows-службы), ЧИТАЙ_МЕНЯ.txt.
+- Пакет лежит на Mac владельца, переносится на сервер через RDP/Google Drive.
+
 ## 2026-07-17 - Подтверждена площадка (сервер заказчика)
 - Живая проверка через RDP на сервере: Windows + админ; платформа 1С 8.3.18.1334
   (64-бит) установлена; файловая база на месте (Test-Path 1Cv8.1CD -> True); сервер
