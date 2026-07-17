@@ -60,7 +60,8 @@
       "Bash(grep -niB1 -A3 \"склад\\\\|warehouse\\\\|Основной\" \"docs/05_KEYCRM_ACCOUNT_SNAPSHOT.md\")",
       "Bash(python3 -c \"import json; d=json.load\\(open\\('handover-1c/test-cases/cases.json'\\)\\); print\\('cases.json valid:', len\\(d['cases']\\), 'кейсов +', len\\(d['manual_scenarios']\\), 'ручных'\\)\")",
       "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Аудит пакета передачи: исправлены 7 находок \\(тест-кейсы, DEC-010, применимость\\) *)",
-      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Подтверждена площадка: сервер заказчика \\(1С 8.3.18 64-бит, файловая база, интернет до KeyCRM\\); BLK-004 закрыт *)"
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Подтверждена площадка: сервер заказчика \\(1С 8.3.18 64-бит, файловая база, интернет до KeyCRM\\); BLK-004 закрыт *)",
+      "Bash(git -c user.name=Claude -c user.email=noreply@anthropic.com commit -q -m 'Подтверждена площадка: сервер заказчика \\(1С 8.3.18 64-бит, файловая база, интернет до KeyCRM\\) *)"
     ]
   }
 }
