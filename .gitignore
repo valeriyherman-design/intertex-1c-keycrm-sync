@@ -9,3 +9,12 @@ data/
 secrets.json
 .DS_Store
 dist/
+
+# доп. защита
+.env
+.env.*
+!.env.example
+*.pem
+id_rsa*
+cookies.txt
+*credentials*.json

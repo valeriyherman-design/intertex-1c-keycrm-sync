@@ -1,0 +1,147 @@
+{
+  "order > change_order_status": {
+    "actionComponents": [],
+    "dropdowns": [
+      {
+        "component": "ElCascader",
+        "options": [
+          {
+            "name": "Заказы",
+            "value": "order"
+          },
+          {
+            "name": "Воронки",
+            "value": "lead"
+          }
+        ]
+      },
+      {
+        "component": "ElSelect",
+        "options": [
+          {
+            "name": "Новый",
+            "value": 1
+          },
+          {
+            "name": "Выявление потребности",
+            "value": 21
+          },
+          {
+            "name": "Выставлен счет",
+            "value": 4
+          },
+          {
+            "name": "Счет оплачен",
+            "value": 3
+          },
+          {
+            "name": "Передано на сборку (комплектація на складе)",
+            "value": 24
+          },
+          {
+            "name": "Доставка согласованна (НП, УП, Бус,...)",
+            "value": 8
+          },
+          {
+            "name": "Заказ отправлен (доставляється перевозщиком)",
+            "value": 11
+          },
+          {
+            "name": "Фидбек от клиента",
+            "value": 25
+          },
+          {
+            "name": "Выполнен",
+            "value": 12
+          },
+          {
+            "name": "Недозвон (тиждень не оплатив)",
+            "value": 14
+          },
+          {
+            "name": "Нет в наличии (остатки не актуальные)",
+            "value": 15
+          },
+          {
+            "name": "Не устроила доставка",
+            "value": 17
+          },
+          {
+            "name": "Отменен",
+            "value": 19
+          },
+          {
+            "name": "Не забрали з пошти",
+            "value": 20
+          }
+        ]
+      }
+    ]
+  },
+  "order > change_payment_status": {
+    "actionComponents": [],
+    "dropdowns": [
+      {
+        "component": "ElCascader",
+        "options": [
+          {
+            "name": "Заказы",
+            "value": "order"
+          },
+          {
+            "name": "Воронки",
+            "value": "lead"
+          }
+        ]
+      },
+      {
+        "component": "ElSelect",
+        "options": [
+          {
+            "name": "Оплачено",
+            "value": "paid"
+          },
+          {
+            "name": "Оплачено свыше",
+            "value": "overpaid"
+          },
+          {
+            "name": "Частичная оплата",
+            "value": "part_paid"
+          },
+          {
+            "name": "Не оплачено",
+            "value": "not_paid"
+          }
+        ]
+      }
+    ]
+  },
+  "lead > change_lead_status": {
+    "actionComponents": [],
+    "dropdowns": [
+      {
+        "component": "ElCascader",
+        "options": [
+          {
+            "name": "Заказы",
+            "value": "order"
+          },
+          {
+            "name": "Воронки",
+            "value": "lead"
+          }
+        ]
+      },
+      {
+        "component": "ElSelect",
+        "options": [
+          {
+            "name": "Заявки",
+            "value": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "error": "(l.lead_statuses || []).map is not a function",
+  "stack": "TypeError: (l.lead_statuses || []).map is not a function\n    at eval (eval at evaluate (:290:30), <anonymous>:33:64)\n    at UtilityScript.evaluate (<anonymous>:297:18)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)"
+}

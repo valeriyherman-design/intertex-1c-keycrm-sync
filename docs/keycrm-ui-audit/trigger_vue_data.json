@@ -1,0 +1,369 @@
+{
+  "vue_data": {
+    "componentCount": 42,
+    "components": [
+      {
+        "componentName": "ElForm",
+        "data": {
+          "fields": "0 items: []",
+          "potentialLabelWidthArr": "0 items: []"
+        },
+        "computed": {},
+        "props": {
+          "labelSuffix": "",
+          "inline": false,
+          "inlineMessage": false,
+          "statusIcon": false,
+          "showMessage": true,
+          "disabled": false,
+          "validateOnRuleChange": true,
+          "hideRequiredAsterisk": false
+        }
+      },
+      {
+        "componentName": "card",
+        "data": {},
+        "computed": {},
+        "props": {
+          "withPadding": true
+        }
+      },
+      {
+        "componentName": "ElFormItem",
+        "data": {
+          "validateState": "",
+          "validateDisabled": false,
+          "validator": "",
+          "isNested": false,
+          "computedLabelWidth": ""
+        },
+        "computed": {},
+        "props": {
+          "inlineMessage": "",
+          "showMessage": true,
+          "size": "medium"
+        }
+      },
+      {
+        "componentName": "ElInput",
+        "data": {
+          "textareaCalcStyle": "",
+          "hovering": false,
+          "focused": false,
+          "isComposing": false,
+          "passwordVisible": false
+        },
+        "computed": {},
+        "props": {
+          "disabled": false,
+          "readonly": false,
+          "type": "text",
+          "autosize": false,
+          "autocomplete": "off",
+          "validateEvent": true,
+          "clearable": true,
+          "showPassword": false,
+          "showWordLimit": false
+        }
+      },
+      {
+        "componentName": "card",
+        "data": {},
+        "computed": {},
+        "props": {
+          "withPadding": true
+        }
+      },
+      {
+        "componentName": "event-selector",
+        "data": {
+          "value": "0 items: []",
+          "events": "2 items: [{\"value\":\"order\",\"children\":[{\"value\":\"change_order_status\",\"label\":\"Смена статуса заказа\"},{\"value\":\"change_payment_status\",\"label\":\"Смена статуса оплаты\"}],\"label\":\"Заказы\"},{\"value\":\"lead\",\"childr",
+          "selectedEventOptions": "0 items: []"
+        },
+        "computed": {},
+        "props": {
+          "options": "0 items: []",
+          "disabled": false
+        }
+      },
+      {
+        "componentName": "ElFormItem",
+        "data": {
+          "validateState": "",
+          "validateDisabled": false,
+          "validator": "",
+          "isNested": false,
+          "computedLabelWidth": ""
+        },
+        "computed": {},
+        "props": {
+          "inlineMessage": "",
+          "showMessage": true,
+          "size": "medium"
+        }
+      },
+      {
+        "componentName": "ElCascader",
+        "data": {
+          "dropDownVisible": false,
+          "checkedValue": "0 items: []",
+          "inputHover": false,
+          "presentTags": "0 items: []",
+          "checkedNodes": "0 items: []",
+          "filtering": false,
+          "suggestions": "0 items: []",
+          "inputInitialHeight": 36,
+          "pressDeleteCount": 0,
+          "showPopper": false,
+          "currentPlacement": ""
+        },
+        "computed": {},
+        "props": {
+          "placement": "bottom-start",
+          "appendToBody": true,
+          "visibleArrow": true,
+          "arrowOffset": 35,
+          "offset": 0,
+          "boundariesPadding": 5,
+          "transformOrigin": true,
+          "value": "0 items: []",
+          "options": "2 items: [{\"value\":\"order\",\"children\":[{\"value\":\"change_order_status\",\"label\":\"Смена статуса заказа\"},{\"value\":\"change_payment_status\",\"label\":\"Смена статуса оплаты\"}],\"label\":\"Заказы\"},{\"value\":\"lead\",\"children\":[{\"value\":\"change_lead_status\",\"label\":\"Смена статуса карточки\"}],\"label\":\"Воронки\"}]",
+          "size": "medium",
+          "placeholder": "Выберите",
+          "disabled": false,
+          "clearable": true,
+          "filterable": false,
+          "separator": " / ",
+          "showAllLevels": true,
+          "collapseTags": false,
+          "debounce": 300
+        }
+      },
+      {
+        "componentName": "ElInput",
+        "data": {
+          "textareaCalcStyle": "",
+          "hovering": false,
+          "focused": false,
+          "isComposing": false,
+          "passwordVisible": false
+        },
+        "computed": {},
+        "props": {
+          "size": "medium",
+          "disabled": false,
+          "readonly": true,
+          "type": "text",
+          "autosize": false,
+          "autocomplete": "off",
+          "validateEvent": false,
+          "clearable": false,
+          "showPassword": false,
+          "showWordLimit": false
+        }
+      },
+      {
+        "componentName": "transition",
+        "data": {},
+        "computed": {},
+        "props": {
+          "name": "el-zoom-in-top",
+          "appear": false,
+          "css": false
+        }
+      },
+      {
+        "componentName": "ElCascaderPanel",
+        "data": {
+          "checkedNodePaths": "0 items: []",
+          "store": "config, nodes, flattedNodes, leafNodes"
+        },
+        "computed": {},
+        "props": {
+          "value": "0 items: []",
+          "options": "2 items: [{\"value\":\"order\",\"children\":[{\"value\":\"change_order_status\",\"label\":\"Смена статуса заказа\"},{\"value\":\"change_payment_status\",\"label\":\"Смена статуса оплаты\"}],\"label\":\"Заказы\"},{\"value\":\"lead\",\"children\":[{\"value\":\"change_lead_status\",\"label\":\"Смена статуса карточки\"}],\"label\":\"Воронки\"}]",
+          "border": false
+        }
+      },
+      {
+        "componentName": "ElScrollbar",
+        "data": {
+          "sizeWidth": "",
+          "sizeHeight": "",
+          "moveX": 0,
+          "moveY": 0
+        },
+        "computed": {},
+        "props": {
+          "native": false,
+          "wrapClass": "el-cascader-menu__wrap",
+          "noresize": false,
+          "tag": "ul"
+        }
+      },
+      {
+        "componentName": "cascader-node",
+        "data": {},
+        "computed": {},
+        "props": {
+          "nodeId": "cascader-menu-9751-0-0"
+        }
+      },
+      {
+        "componentName": "cascader-node",
+        "data": {},
+        "computed": {},
+        "props": {
+          "nodeId": "cascader-menu-9751-0-1"
+        }
+      },
+      {
+        "componentName": "Bar",
+        "data": {},
+        "computed": {},
+        "props": {
+          "vertical": false,
+          "size": "",
+          "move": 0
+        }
+      },
+      {
+        "componentName": "Bar",
+        "data": {},
+        "computed": {},
+        "props": {
+          "vertical": true,
+          "size": "",
+          "move": 0
+        }
+      },
+      {
+        "componentName": "card",
+        "data": {},
+        "computed": {},
+        "props": {
+          "withPadding": true
+        }
+      },
+      {
+        "componentName": "ElPopover",
+        "data": {
+          "showPopper": false,
+          "currentPlacement": ""
+        },
+        "computed": {},
+        "props": {
+          "transformOrigin": true,
+          "placement": "right",
+          "boundariesPadding": 5,
+          "offset": -100,
+          "value": false,
+          "visibleArrow": true,
+          "arrowOffset": 0,
+          "appendToBody": true,
+          "trigger": "click",
+          "openDelay": 0,
+          "closeDelay": 200,
+          "disabled": false,
+          "width": "300",
+          "transition": "fade-in-linear",
+          "tabindex": 0
+        }
+      },
+      {
+        "componentName": "transition",
+        "data": {},
+        "computed": {},
+        "props": {
+          "name": "fade-in-linear",
+          "appear": false,
+          "css": false
+        }
+      },
+      {
+        "componentName": "ElRadio",
+        "data": {
+          "focus": false
+        },
+        "computed": {},
+        "props": {
+          "value": "immediate",
+          "label": "immediate",
+          "disabled": false,
+          "border": false
+        }
+      }
+    ]
+  },
+  "event_types": {
+    "events": [
+      {
+        "name": "Заказы",
+        "value": "order",
+        "children": [
+          {
+            "name": "Смена статуса заказа",
+            "value": "change_order_status"
+          },
+          {
+            "name": "Смена статуса оплаты",
+            "value": "change_payment_status"
+          }
+        ]
+      },
+      {
+        "name": "Воронки",
+        "value": "lead",
+        "children": [
+          {
+            "name": "Смена статуса карточки",
+            "value": "change_lead_status"
+          }
+        ]
+      }
+    ],
+    "options": [
+      {
+        "name": "Заказы",
+        "value": "order",
+        "children": [
+          {
+            "name": "Смена статуса заказа",
+            "value": "change_order_status"
+          },
+          {
+            "name": "Смена статуса оплаты",
+            "value": "change_payment_status"
+          }
+        ]
+      },
+      {
+        "name": "Воронки",
+        "value": "lead",
+        "children": [
+          {
+            "name": "Смена статуса карточки",
+            "value": "change_lead_status"
+          }
+        ]
+      }
+    ]
+  },
+  "action_types": {
+    "ElInput.props.type": "text",
+    "comp.events": "[{\"value\":\"order\",\"children\":[{\"value\":\"change_order_status\",\"label\":\"Смена статуса заказа\"},{\"value\":\"change_payment_status\",\"label\":\"Смена статуса оплаты\"}],\"label\":\"Заказы\"},{\"value\":\"lead\",\"children\":[{\"value\":\"change_lead_status\",\"label\":\"Смена статуса карточки\"}],\"label\":\"Воронки\"}]",
+    "comp.selectedEventOptions": "[]",
+    "comp.props.options": "[]",
+    "ElCascader.props.popperOptions": "{\"gpuAcceleration\":false}",
+    "ElCascader.props.options": "[{\"value\":\"order\",\"children\":[{\"value\":\"change_order_status\",\"label\":\"Смена статуса заказа\"},{\"value\":\"change_payment_status\",\"label\":\"Смена статуса оплаты\"}],\"label\":\"Заказы\"},{\"value\":\"lead\",\"children\":[{\"value\":\"change_lead_status\",\"label\":\"Смена статуса карточки\"}],\"label\":\"Воронки\"}]",
+    "ElCascaderPanel.props.options": "[{\"value\":\"order\",\"children\":[{\"value\":\"change_order_status\",\"label\":\"Смена статуса заказа\"},{\"value\":\"change_payment_status\",\"label\":\"Смена статуса оплаты\"}],\"label\":\"Заказы\"},{\"value\":\"lead\",\"children\":[{\"value\":\"change_lead_status\",\"label\":\"Смена статуса карточки\"}],\"label\":\"Воронки\"}]",
+    "ElPopover.props.popperOptions": "{\"gpuAcceleration\":false}",
+    "ElPopover.props.trigger": "click",
+    "ElDropdown.triggerElm": "{\"_prevClass\":\"el-dropdown-link\"}",
+    "ElDropdown.props.trigger": "click",
+    "ElButton.props.type": "primary",
+    "ElButton.props.nativeType": "button",
+    "comp.props.selectedActions": "[]"
+  }
+}

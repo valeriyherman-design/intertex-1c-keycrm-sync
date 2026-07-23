@@ -1,0 +1,382 @@
+{
+  "lead_statuses": {
+    "pipeline": null,
+    "list": []
+  },
+  "pipelines": [
+    {
+      "id": 1,
+      "title": "Заявки",
+      "target_type": "order",
+      "use_payments": false,
+      "use_products": false,
+      "target_id": null,
+      "lead_type": "lead",
+      "position": 0,
+      "distribute_by": [
+        3,
+        14
+      ],
+      "created_at": "2022-07-19T10:24:42.000000Z",
+      "updated_at": "2026-03-17T22:46:39.000000Z",
+      "deleted_at": null,
+      "leads_count": 13010,
+      "statuses": [
+        {
+          "id": 1,
+          "pipeline_id": 1,
+          "title": "Новий",
+          "alias": "new",
+          "color": "#409EFF",
+          "is_final": false,
+          "is_reserved": true,
+          "position": 0,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:17.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 2,
+          "pipeline_id": 1,
+          "title": "Не вдалося зв'язатися",
+          "alias": "ne_vdalosya_zvyazatisya",
+          "color": "#E6A23C",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 1,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:18.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 11,
+          "pipeline_id": 1,
+          "title": "Контакт встановлено",
+          "alias": "kontakt_vstanovleno",
+          "color": "#13C2C2",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 2,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2023-03-31T07:50:10.000000Z",
+          "updated_at": "2026-03-18T00:19:18.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 14,
+          "pipeline_id": 1,
+          "title": "Кваліфіковано",
+          "alias": "kvalifikovano",
+          "color": "#36CFC9",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 3,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2026-03-17T21:07:11.000000Z",
+          "updated_at": "2026-03-18T00:19:19.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 17,
+          "pipeline_id": 1,
+          "title": "Постійний клієнт",
+          "alias": "postiinii_klijent",
+          "color": "#52C41A",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 6,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2026-03-17T23:10:16.000000Z",
+          "updated_at": "2026-03-18T00:19:19.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 18,
+          "pipeline_id": 1,
+          "title": "Не вистачає бюджету",
+          "alias": "ne_vistacaje_byudzetu",
+          "color": "#FFA940",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 7,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2026-03-17T23:10:23.000000Z",
+          "updated_at": "2026-03-18T00:19:20.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 19,
+          "pipeline_id": 1,
+          "title": "Проблема з доставкою",
+          "alias": "problema_z_dostavkoyu",
+          "color": "#D46B08",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 8,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2026-03-17T23:10:31.000000Z",
+          "updated_at": "2026-03-18T00:19:20.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 13,
+          "pipeline_id": 1,
+          "title": "Не готовий зараз купити",
+          "alias": "ne_gotovii_zaraz_kupiti",
+          "color": "#FA8C16",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 8,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2023-03-31T08:22:13.000000Z",
+          "updated_at": "2026-03-18T00:19:14.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 20,
+          "pipeline_id": 1,
+          "title": "Виявлення потреб",
+          "alias": "viyavlennya_potreb",
+          "color": "#A9E34B",
+          "is_final": false,
+          "is_reserved": false,
+          "position": 9,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2026-03-18T00:32:24.000000Z",
+          "updated_at": "2026-03-18T00:32:24.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 4,
+          "pipeline_id": 1,
+          "title": "Успішно — замовлення створено",
+          "alias": "successful",
+          "color": "#52C41A",
+          "is_final": true,
+          "is_reserved": true,
+          "position": 0,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:21.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 7,
+          "pipeline_id": 1,
+          "title": "Не цільовий",
+          "alias": "ne_cilyovii",
+          "color": "#FF8787",
+          "is_final": true,
+          "is_reserved": false,
+          "position": 1,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:28:44.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 9,
+          "pipeline_id": 1,
+          "title": "Роздріб",
+          "alias": "rozdrib",
+          "color": "#8C8C8C",
+          "is_final": true,
+          "is_reserved": false,
+          "position": 2,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:22.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 5,
+          "pipeline_id": 1,
+          "title": "Так і не вийшов на зв'язок",
+          "alias": "failed_to_contact",
+          "color": "#595959",
+          "is_final": true,
+          "is_reserved": true,
+          "position": 3,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:22.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 8,
+          "pipeline_id": 1,
+          "title": "Нецільове звернення",
+          "alias": "necilyove_zvernennya",
+          "color": "#CF1322",
+          "is_final": true,
+          "is_reserved": false,
+          "position": 4,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:23.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 10,
+          "pipeline_id": 1,
+          "title": "Спам",
+          "alias": "spam",
+          "color": "#F56C6C",
+          "is_final": true,
+          "is_reserved": false,
+          "position": 5,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-08-17T07:16:29.000000Z",
+          "updated_at": "2026-03-18T00:19:23.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 6,
+          "pipeline_id": 1,
+          "title": "Немає в наявності",
+          "alias": "nemaje_v_nayavnosti",
+          "color": "#8C8C8C",
+          "is_final": true,
+          "is_reserved": false,
+          "position": 6,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2022-07-19T10:24:42.000000Z",
+          "updated_at": "2026-03-18T00:19:24.000000Z",
+          "deleted_at": null
+        },
+        {
+          "id": 12,
+          "pipeline_id": 1,
+          "title": "Не підходить ціна",
+          "alias": "ne_pidxodit_cina",
+          "color": "#8C8C8C",
+          "is_final": true,
+          "is_reserved": false,
+          "position": 7,
+          "lifetime": null,
+          "lifetime_type": null,
+          "created_at": "2023-03-31T08:21:54.000000Z",
+          "updated_at": "2026-03-18T00:19:24.000000Z",
+          "deleted_at": null
+        }
+      ],
+      "roles": [
+        {
+          "id": 1,
+          "name": "Administrator",
+          "alias": "administrator",
+          "color": "#2B347D",
+          "is_reserved": true,
+          "statuses_all": true,
+          "accepted_all": true,
+          "created_at": "2022-07-14T02:38:24.000000Z",
+          "updated_at": "2026-03-18T08:29:33.000000Z",
+          "deleted_at": null,
+          "pivot": {
+            "lead_pipeline_id": 1,
+            "role_id": 1
+          }
+        },
+        {
+          "id": 2,
+          "name": "Manager",
+          "alias": "manager",
+          "color": "#5867DD",
+          "is_reserved": true,
+          "statuses_all": true,
+          "accepted_all": true,
+          "created_at": "2022-07-14T02:38:24.000000Z",
+          "updated_at": "2026-03-18T08:24:30.000000Z",
+          "deleted_at": null,
+          "pivot": {
+            "lead_pipeline_id": 1,
+            "role_id": 2
+          }
+        }
+      ]
+    }
+  ],
+  "chat_channels": [
+    {
+      "id": 1,
+      "name": "Instagram",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 2,
+      "name": "Telegram",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 3,
+      "name": "Viber",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 4,
+      "name": "info@intertex-fabric.com",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 5,
+      "name": "Facebook",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 6,
+      "name": "Viber Bot sait",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 7,
+      "name": "Turbo sms",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 8,
+      "name": "Sait",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    },
+    {
+      "id": 9,
+      "name": "Watsapp Valeria",
+      "type": null,
+      "messenger_type": null,
+      "is_active": true
+    }
+  ]
+}

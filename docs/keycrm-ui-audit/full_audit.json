@@ -1,0 +1,161 @@
+{
+  "vuex_data": {
+    "pipelines": [],
+    "users": [],
+    "leads_statuses": [],
+    "order_statuses": [],
+    "sources": [],
+    "channels": [],
+    "custom_fields": [],
+    "tags": []
+  },
+  "company": {},
+  "chats": {},
+  "order_statuses": [],
+  "users_detail": [],
+  "triggers": [],
+  "vuex_keys": {
+    "layoutClass": [],
+    "route": [
+      "name",
+      "meta",
+      "path",
+      "hash",
+      "query",
+      "params",
+      "fullPath",
+      "matched"
+    ],
+    "waitingForPermission": "boolean",
+    "theme": "string",
+    "auth": [
+      "token",
+      "user",
+      "notificationsCount"
+    ],
+    "user": [
+      "roles",
+      "user_statuses",
+      "permissions",
+      "users",
+      "users_conversations"
+    ],
+    "order": [
+      "tags",
+      "groups",
+      "sources",
+      "statuses",
+      "editableOrder",
+      "filterStatusIds",
+      "source_statuses",
+      "ignore_groups_filter",
+      "isDrawerVisible",
+      "shippingLists"
+    ],
+    "config": [
+      "isLoaded",
+      "settings_tabs",
+      "static",
+      "defaultNotifications",
+      "settings",
+      "print_templates",
+      "export_templates",
+      "document_templates",
+      "documents_list",
+      "prep_centers_uri",
+      "payment_statuses",
+      "order_payment_statuses",
+      "custom_fields"
+    ],
+    "_config": [
+      "filters",
+      "filterProfiles"
+    ],
+    "client": [
+      "editableClient",
+      "editableCompany",
+      "editableShippingAddress"
+    ],
+    "finance": [
+      "payments",
+      "transactions",
+      "unlinked_transactions",
+      "bills",
+      "bill_types",
+      "expense_types",
+      "payment_methods",
+      "payment_gateways",
+      "fiscals",
+      "supported_services",
+      "supported_fiscal_providers",
+      "currency_common_rates",
+      "currency_rates"
+    ],
+    "catalog": [
+      "warehouses",
+      "flatTreeCategories",
+      "product_statuses"
+    ],
+    "billing": [
+      "balance",
+      "allowed"
+    ],
+    "dictionary": [
+      "tags",
+      "payment_statuses",
+      "delivery_services",
+      "warehouses",
+      "templates",
+      "post_services",
+      "prep_centers",
+      "shipment_templates"
+    ],
+    "tasks": [
+      "task",
+      "expired_count",
+      "selected",
+      "priorities",
+      "types"
+    ],
+    "importer": [
+      "actions"
+    ],
+    "communications": [
+      "callRouteServices"
+    ],
+    "manufacturing": [
+      "new_count"
+    ],
+    "conversations": [
+      "channels",
+      "marketplace_channels",
+      "unreadConversations",
+      "client_conversations",
+      "currentConversation"
+    ],
+    "leads": [
+      "selected",
+      "focused",
+      "lead_statuses",
+      "pipelines",
+      "lead"
+    ],
+    "automations": [
+      "triggers"
+    ],
+    "suppliers": [],
+    "widgets": [
+      "widgets",
+      "editingWidget"
+    ],
+    "loyalty": [
+      "programs"
+    ],
+    "source": []
+  },
+  "api_data": {
+    "api_keys": [],
+    "integrations": {}
+  },
+  "sidebar": []
+}
